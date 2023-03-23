@@ -1,18 +1,18 @@
+import datetime
 import os
 
-from flask import Flask, request, session
-from twilio.rest import Client
 import openai
-import datetime
-from flask_ngrok import run_with_ngrok
 from dotenv import load_dotenv
+from flask import Flask, request, session
+from flask_ngrok import run_with_ngrok
+from twilio.rest import Client
 
 load_dotenv()
 
 app = Flask(__name__)
 run_with_ngrok(app)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'top-secret!')
-app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=10)
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "top-secret!")
+app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
 
 # OpenAI Chat GPT
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -42,35 +42,36 @@ def ask(message_log):
 
     # If no response with text is found, return the first response's content (which may be empty)
     reply_content = response.choices[0].message.content
-    session['chat_log'].append({"role": "user", "content": f"{reply_content}"})
+    session["chat_log"].append({"role": "user", "content": f"{reply_content}"})
     return reply_content
 
 
 def append_interaction_to_chat_log(question):
-    session['chat_log'].append({'role': 'user', 'content': question})
+    session["chat_log"].append({"role": "user", "content": question})
+
 
 def send_message(body_mess):
     message = client.messages.create(
-        from_='whatsapp:+14155238886',  # With Country Code
+        from_="whatsapp:+14155238886",  # With Country Code
         body=body_mess,
-        to='whatsapp:+33667656197'  # With Country Code
+        to="whatsapp:+33667656197",  # With Country Code
     )
     print(message.sid)  # Print Response
 
 
-@app.route('/bot', methods=['POST'])
+@app.route("/bot", methods=["POST"])
 def bot():
     if "chat_log" not in session:
-        session['chat_log'] = [
+        session["chat_log"] = [
             {"role": "system", "content": "You are a helpful assistant."}
         ]
 
-    incoming_msg = request.values['Body'].lower()
+    incoming_msg = request.values["Body"].lower()
     print(incoming_msg)
 
     if incoming_msg:
         append_interaction_to_chat_log(incoming_msg)
-        answer = ask(session['chat_log'])
+        answer = ask(session["chat_log"])
         # answer = ask('\n'.join([f"{chat['role']}: {chat['content']}" for chat in session['chat_log']]))
 
         send_message(answer)
@@ -78,8 +79,8 @@ def bot():
         send_message("Message Cannot Be Empty!")
         print("Message Is Empty")
 
-    return ''
+    return ""
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run()
