@@ -6,7 +6,9 @@ from dotenv import load_dotenv
 from flask import Flask, request, session
 from flask_ngrok import run_with_ngrok
 from twilio.rest import Client
+from twilio.twiml.messaging_response import MessagingResponse
 
+from mongodb_db import get_user_id, add_history, get_user
 from parse_phone_numbers import extract_phone_number
 
 load_dotenv()
@@ -31,7 +33,7 @@ def ask(message_log):
     """Send a message to the OpenAI chatbot model and return its response.
 
     Args:
-        message_log (list[dict]): The conversation history up to this point, as a list of dictionaries.
+        message_log: The conversation history up to this point, as a list of dictionaries.
 
     Returns:
         str: The response of the chatbot model.
@@ -50,16 +52,16 @@ def ask(message_log):
     return reply_content
 
 
-def append_interaction_to_chat_log(question):
+def append_interaction_to_chat_log(user_id, question):
     """Append a new interaction to the chat log.
 
     Args:
         question (str): The question asked by the user.
     """
-    session["chat_log"].append({"role": "user", "content": question})
+    add_history(user_id, question)
 
 
-def send_message(body_mess):
+def send_message(body_mess, phone_number):
     """Send a message via the Twilio API.
 
     Args:
@@ -68,12 +70,18 @@ def send_message(body_mess):
     message = client.messages.create(
         from_="whatsapp:+14155238886",
         body=body_mess,
-        to="whatsapp:+33667656197",
+        to=f"whatsapp:{phone_number}",
     )
     print(message.sid)
 
 
-@app.route("/bot", methods=["POST"])
+def respond(message):
+    response = MessagingResponse()
+    response.message(message)
+    return str(response)
+
+
+@app.route("/bot", methods=["GET", "POST"])
 def bot():
     """Main function to handle incoming requests to the chatbot endpoint."""
     if "chat_log" not in session:
@@ -83,15 +91,32 @@ def bot():
 
     incoming_msg = request.values["Body"].lower()
     phone_number = extract_phone_number(request.values["From"].lower())
-    print(incoming_msg)
 
+    user_id = get_user_id(phone_number)
+    res = get_user(user_id)
+
+    if user_id is None:
+        send_message(
+            f"Please submit coordinates through the WhatsApp mobile app.", phone_number
+        )
+        return ""
     if incoming_msg:
-        append_interaction_to_chat_log(incoming_msg)
-        answer = ask(session["chat_log"])
-        send_message(answer)
-    else:
-        send_message("Message Cannot Be Empty!")
-        print("Message Is Empty")
+        if not res["history"]:
+            message = [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": incoming_msg},
+            ]
+            answer = ask(message)
+            message.append({"role": "assistant", "content": answer})
+            append_interaction_to_chat_log(user_id, message)
+        else:
+            message = res["history"]
+            message.append({"role": "user", "content": incoming_msg})
+            answer = ask(message)
+            res["history"].append({"role": "assistant", "content": answer})
+            append_interaction_to_chat_log(user_id, res["history"])
+
+        send_message(answer, phone_number)
 
     return ""
 
