@@ -7,6 +7,8 @@ from flask import Flask, request, session
 from flask_ngrok import run_with_ngrok
 from twilio.rest import Client
 
+from parse_phone_numbers import extract_phone_number
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -80,6 +82,7 @@ def bot():
         ]
 
     incoming_msg = request.values["Body"].lower()
+    phone_number = extract_phone_number(request.values["From"].lower())
     print(incoming_msg)
 
     if incoming_msg:
