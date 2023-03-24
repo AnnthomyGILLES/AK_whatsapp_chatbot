@@ -11,6 +11,7 @@ load_dotenv()
 
 app = Flask(__name__)
 run_with_ngrok(app)
+
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "top-secret!")
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
 
@@ -24,43 +25,55 @@ auth_token = os.getenv("TWILIO_AUTH_TOKEN")
 client = Client(account_sid, auth_token)
 
 
-# Function to send a message to the OpenAI chatbot model and return its response
 def ask(message_log):
-    # Use OpenAI's ChatCompletion API to get the chatbot's response
+    """Send a message to the OpenAI chatbot model and return its response.
+
+    Args:
+        message_log (list[dict]): The conversation history up to this point, as a list of dictionaries.
+
+    Returns:
+        str: The response of the chatbot model.
+    """
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",  # The name of the OpenAI chatbot model to use
-        messages=message_log,  # The conversation history up to this point, as a list of dictionaries
-        max_tokens=1024,  # The maximum number of tokens (words or subwords) in the generated response
-        stop=None,  # The stopping sequence for the generated response, if any (not used here)
-        temperature=0.7,  # The "creativity" of the generated response (higher temperature = more creative)
+        model="gpt-3.5-turbo",
+        messages=message_log,
+        max_tokens=1024,
+        stop=None,
+        temperature=0.7,
     )
 
-    # # Find the first response from the chatbot that has text in it (some responses may not have text)
-    # for choice in response.choices:
-    #     if "text" in choice:
-    #         return choice.text
-
-    # If no response with text is found, return the first response's content (which may be empty)
     reply_content = response.choices[0].message.content
     session["chat_log"].append({"role": "user", "content": f"{reply_content}"})
+
     return reply_content
 
 
 def append_interaction_to_chat_log(question):
+    """Append a new interaction to the chat log.
+
+    Args:
+        question (str): The question asked by the user.
+    """
     session["chat_log"].append({"role": "user", "content": question})
 
 
 def send_message(body_mess):
+    """Send a message via the Twilio API.
+
+    Args:
+        body_mess (str): The message to be sent.
+    """
     message = client.messages.create(
-        from_="whatsapp:+14155238886",  # With Country Code
+        from_="whatsapp:+14155238886",
         body=body_mess,
-        to="whatsapp:+33667656197",  # With Country Code
+        to="whatsapp:+33667656197",
     )
-    print(message.sid)  # Print Response
+    print(message.sid)
 
 
 @app.route("/bot", methods=["POST"])
 def bot():
+    """Main function to handle incoming requests to the chatbot endpoint."""
     if "chat_log" not in session:
         session["chat_log"] = [
             {"role": "system", "content": "You are a helpful assistant."}
@@ -72,8 +85,6 @@ def bot():
     if incoming_msg:
         append_interaction_to_chat_log(incoming_msg)
         answer = ask(session["chat_log"])
-        # answer = ask('\n'.join([f"{chat['role']}: {chat['content']}" for chat in session['chat_log']]))
-
         send_message(answer)
     else:
         send_message("Message Cannot Be Empty!")
