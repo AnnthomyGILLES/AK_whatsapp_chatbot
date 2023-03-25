@@ -2,8 +2,9 @@ import datetime
 import os
 
 import openai
+import stripe
 from dotenv import load_dotenv
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_ngrok import run_with_ngrok
 from twilio.rest import Client
 
@@ -25,7 +26,18 @@ completion = openai.Completion()
 # Twilio
 account_sid = os.getenv("TWILIO_ACCOUNT_SID")
 auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+twilio_phone_numer = os.getenv("TWILIO_PHONE_NUMER")
+
 client = Client(account_sid, auth_token)
+
+# Stripe
+stripe_keys = {
+    "secret_key": os.getenv("STRIPE_SECRET_KEY"),
+    "publishable_key": os.getenv("STRIPE_PUBLISHABLE_KEY"),
+    "endpoint_secret": os.getenv("STRIPE_ENDPOINT"),
+}
+
+stripe.api_key = stripe_keys["secret_key"]
 
 
 def ask(message_log):
@@ -68,7 +80,7 @@ def send_message(body_mess, phone_number):
         phone_number (str): The phone number of the recipient.
     """
     message = client.messages.create(
-        from_="whatsapp:+14155238886",
+        from_=f"whatsapp:{twilio_phone_numer}",
         body=body_mess,
         to=f"whatsapp:{phone_number}",
     )
@@ -106,6 +118,42 @@ def bot():
         send_message(answer, phone_number)
 
     return ""
+
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get("Stripe-Signature")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, stripe_keys["endpoint_secret"]
+        )
+    except ValueError as e:
+        # Invalid payload
+        return jsonify({"error": "Invalid payload"}), 400
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        return jsonify({"error": "Invalid payload"}), 400
+
+    # Handle the event
+    if event.type == "payment_intent.succeeded":
+        payment_intent = event["data"]["object"]  # contains a stripe.PaymentIntent
+        # Add user
+        # user = {
+        #     "phone_number": {customer_phone_number},
+        #     "is_active": True,
+        #     "history": None,
+        # }
+        # _ = add_user(**user)
+        print("PaymentIntent was successful!")
+    elif event["type"] == "payment_intent.payment_failed":
+        intent = event["data"]["object"]
+        print("PaymentIntent was failed!")
+    else:
+        print("Unhandled event type {}".format(event.type))
+
+    return jsonify({"status": "success"}), 200
 
 
 if __name__ == "__main__":
