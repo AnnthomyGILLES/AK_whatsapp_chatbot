@@ -8,7 +8,14 @@ from flask import Flask, request, jsonify
 from flask_ngrok import run_with_ngrok
 from twilio.rest import Client
 
-from mongodb_db import get_user_id_with_phone_number, update_history, get_user
+from mongodb_db import (
+    get_user_id_with_phone_number,
+    update_history,
+    get_user,
+    add_user,
+    NoUserPhoneNumber,
+    DuplicateUser,
+)
 from parse_phone_numbers import extract_phone_number
 
 load_dotenv()
@@ -37,18 +44,11 @@ stripe_keys = {
     "endpoint_secret": os.getenv("STRIPE_ENDPOINT"),
 }
 
+stripe_payment_link = os.getenv("STRIPE_PAYMENT_LINK")
 stripe.api_key = stripe_keys["secret_key"]
 
 
 def ask(message_log):
-    """Send a message to the OpenAI chatbot model and return its response.
-
-    Args:
-        message_log: The conversation history up to this point, as a list of dictionaries.
-
-    Returns:
-        str: The response of the chatbot model.
-    """
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=message_log,
@@ -63,22 +63,10 @@ def ask(message_log):
 
 
 def append_interaction_to_chat_log(user_id, question):
-    """Append a new interaction to the chat log.
-
-    Args:
-        user_id (str): The id of the user.
-        question (str): The question asked by the user.
-    """
     update_history(user_id, question)
 
 
 def send_message(body_mess, phone_number):
-    """Send a message via the Twilio API.
-
-    Args:
-        body_mess (str): The message to be sent.
-        phone_number (str): The phone number of the recipient.
-    """
     message = client.messages.create(
         from_=f"whatsapp:{twilio_phone_numer}",
         body=body_mess,
@@ -97,6 +85,7 @@ def bot():
 
     if user_id is None:
         send_message(f"Inscrivez-vous pour utiliser WhatIA.", phone_number)
+        send_message(stripe_payment_link, phone_number)
         return ""
 
     if incoming_msg:
@@ -127,7 +116,7 @@ def webhook():
 
     try:
         event = stripe.Webhook.construct_event(
-            payload, sig_header, stripe_keys["endpoint_secret"]
+            request.data, sig_header, stripe_keys["endpoint_secret"]
         )
     except ValueError as e:
         # Invalid payload
@@ -138,18 +127,13 @@ def webhook():
 
     # Handle the event
     if event.type == "payment_intent.succeeded":
-        payment_intent = event["data"]["object"]  # contains a stripe.PaymentIntent
-        # Add user
-        # user = {
-        #     "phone_number": {customer_phone_number},
-        #     "is_active": True,
-        #     "history": None,
-        # }
-        # _ = add_user(**user)
-        print("PaymentIntent was successful!")
-    elif event["type"] == "payment_intent.payment_failed":
-        intent = event["data"]["object"]
-        print("PaymentIntent was failed!")
+        stripe_customer_id = request.json["data"]["object"]["customer"]
+        stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
+        try:
+            _ = add_user(stripe_customer_phone)
+            print("PaymentIntent was successful!")
+        except (DuplicateUser, NoUserPhoneNumber) as e:
+            print("[Log] No Phone number provided")
     else:
         print("Unhandled event type {}".format(event.type))
 
