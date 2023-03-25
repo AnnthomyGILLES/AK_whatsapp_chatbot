@@ -1,11 +1,22 @@
 import pymongo
 
+
+class DuplicateUser(Exception):
+    pass
+
+
+class NoUserPhoneNumber(Exception):
+    pass
+
+
 # create a MongoDB client and connect to the database
 client = pymongo.MongoClient("mongodb://localhost:27017/")
 db = client["mydatabase"]
 
 # define the collection and document structure
 users = db["users"]
+
+users.create_index("phone_number", unique=True)
 
 
 def update_history(user_id, message):
@@ -26,16 +37,22 @@ def get_user_id_with_phone_number(phone_number):
 
 
 # define a function for adding a new user document
-def add_user(phone_number, is_active=False, history=None):
+def add_user(phone_number, is_active=True, history=None):
     if history is None:
         history = []
+
+    if phone_number is None:
+        raise NoUserPhoneNumber("Provide a valid phone number.")
     user = {
         "phone_number": phone_number,
         "is_active": is_active,
         "history": history,
     }
-    result = users.insert_one(user)
-    return result.inserted_id
+    try:
+        result = users.insert_one(user)
+        return result.inserted_id
+    except pymongo.errors.DuplicateKeyError:
+        raise DuplicateUser(f"Following uer already exist: {phone_number}")
 
 
 def get_user(user_id):
