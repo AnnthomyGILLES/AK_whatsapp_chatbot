@@ -8,16 +8,14 @@ db = client["mydatabase"]
 users = db["users"]
 
 
-def add_history(user_id, message):
+def update_history(user_id, message):
     query = {"_id": user_id}
     update = {"$set": {"history": message}}
-    result = users.find_one_and_update(query, update, upsert=True)
-    print("ok")
-    # print("Updated", result.modified_count, "document(s)")
+    _ = users.find_one_and_update(query, update, upsert=True)
 
 
 # define a function for getting the user id based on phone number
-def get_user_id(phone_number):
+def get_user_id_with_phone_number(phone_number):
     query = {"phone_number": phone_number}
     projection = {"_id": 1}
     result = users.find_one(query, projection)
@@ -49,11 +47,11 @@ if __name__ == "__main__":
     user = {"phone_number": "1234567890", "is_active": True, "history": None}
     _ = add_user(**user)
 
-    user_id = get_user_id("1234567890")
+    user_id = get_user_id_with_phone_number("1234567890")
 
     # call the add_history function to update the user's history field
-    add_history(user_id, "User created")
-    add_history(user_id, "User logged in")
+    update_history(user_id, "User created")
+    update_history(user_id, "User logged in")
 
     res = get_user(user_id)
     print(res)
