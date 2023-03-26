@@ -109,9 +109,10 @@ def bot():
     return ""
 
 
+# TODO Coder les fois ou l'utilisateur se desinscrit.
+# TODO User recoit un lien d'annulation si /cancel
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    payload = request.get_data(as_text=True)
     sig_header = request.headers.get("Stripe-Signature")
 
     try:
