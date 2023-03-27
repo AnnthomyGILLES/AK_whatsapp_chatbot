@@ -16,6 +16,7 @@ from mongodb_db import (
     add_user,
     NoUserPhoneNumber,
     DuplicateUser,
+    delete_document,
 )
 from parse_phone_numbers import extract_phone_number
 
@@ -117,7 +118,7 @@ def bot():
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": incoming_msg},
             ]
-            answer = ask(message)
+            answer = ask_chat_conversation(message)
             message.append({"role": "assistant", "content": answer})
             append_interaction_to_chat_log(user_id, message)
         else:
@@ -178,4 +179,4 @@ def webhook():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="127.0.0.1", port=5000)
