@@ -124,7 +124,7 @@ def bot():
         else:
             message = user["history"]
             message.append({"role": "user", "content": incoming_msg})
-            answer = ask(message)
+            answer = ask_chat_conversation(message)
             user["history"].append({"role": "assistant", "content": answer})
             append_interaction_to_chat_log(user_id, user["history"])
 
