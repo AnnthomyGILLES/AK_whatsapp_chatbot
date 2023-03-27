@@ -67,7 +67,7 @@ def add_user(phone_number, is_active=True, history=None):
         result = users.insert_one(user)
         return result.inserted_id
     except pymongo.errors.DuplicateKeyError:
-        raise DuplicateUser(f"Following uer already exist: {phone_number}")
+        raise DuplicateUser(f"Following user already exist: {phone_number}")
 
 
 def get_user(user_id):
