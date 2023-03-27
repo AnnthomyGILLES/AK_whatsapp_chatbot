@@ -61,6 +61,7 @@ def add_user(phone_number, is_active=True, history=None):
         "phone_number": phone_number,
         "is_active": is_active,
         "history": history,
+        "created_at": datetime.datetime.utcnow(),
     }
     try:
         result = users.insert_one(user)
