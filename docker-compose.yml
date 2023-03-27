@@ -1,25 +1,67 @@
-version: '3.9'
+version: '1.0.0'
 
 services:
-  app:
+  flask:
     build: .
+    container_name: chatbot
+    restart: unless-stopped
+    environment:
+      APP_ENV: "prod"
+      APP_DEBUG: "False"
+      APP_PORT: 5000
+      MONGODB_DATABASE: mydatabase
+      MONGODB_HOSTNAME: mongodb
+      volumes:
+        - appdata:/app
+      depends_on:
+        - mongodb
+      networks:
+        - frontend
+        - backend
     ports:
       - "5000:50000"
-    depends_on:
-      - db
-    environment:
-      - MONGO_URI=mongodb://db:27017/mydatabase
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: unless-stopped
+    command: mongod --auth
+    env_file:
+      - .env
     volumes:
-      - "/usercode/:/app"
+      - mongodbdata:/data/db
+    networks:
+      - backend
 
-  db:
-    image: mongo
-    volumes:
-      - mongodb_data:/data/db
+  webserver:
+#    build: nginx
+    image: nginx:latest
+    container_name: webserver
+    restart: unless-stopped
     environment:
-      - MONGO_INITDB_DATABASE=mydatabase
+      APP_ENV: "prod"
+      APP_NAME: "webserver"
+      APP_DEBUG: "false"
+      SERVICE_NAME: "webserver"
     ports:
-      - "27017:27017"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - nginxdata:/var/log/nginx
+    depends_on:
+      - flask
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
 
 volumes:
-  mongodb_data:
+  mongodbdata:
+    driver: local
+  appdata:
+    driver: local
+  nginxdata:
+    driver: local
