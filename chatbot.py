@@ -149,15 +149,30 @@ def webhook():
         # Invalid signature
         return jsonify({"error": "Invalid payload"}), 400
 
+    stripe_customer_id = request.json["data"]["object"]["customer"]
+    stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
+
     # Handle the event
-    if event.type == "payment_intent.succeeded":
-        stripe_customer_id = request.json["data"]["object"]["customer"]
-        stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
+    if event["type"] == "payment_intent.succeeded":
         try:
             _ = add_user(stripe_customer_phone)
             print("PaymentIntent was successful!")
         except (DuplicateUser, NoUserPhoneNumber) as e:
             print("[Log] No Phone number provided")
+    elif event["type"] in [
+        "customer.subscription.deleted",
+        "customer.subscription.paused",
+    ]:
+        delete_document({"phone_number": stripe_customer_phone})
+        print(" User unsubscribe.")
+    elif event.type == "customer.subscription.updated":
+        subscription = event.data.object
+        if (
+            subscription.status == "canceled"
+            and subscription.cancel_at_period_end == False
+        ):
+            delete_document({"phone_number": stripe_customer_phone})
+            print(" User unsubscribe.")
     else:
         print("Unhandled event type {}".format(event.type))
 
