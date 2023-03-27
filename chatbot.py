@@ -5,7 +5,8 @@ import openai
 import stripe
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
-from flask_ngrok import run_with_ngrok
+from openai.error import RateLimitError
+from ratelimit import sleep_and_retry, limits
 from twilio.rest import Client
 
 from mongodb_db import (
@@ -15,13 +16,16 @@ from mongodb_db import (
     add_user,
     NoUserPhoneNumber,
     DuplicateUser,
+    delete_document,
 )
 from parse_phone_numbers import extract_phone_number
 
 load_dotenv()
 
 app = Flask(__name__)
-run_with_ngrok(app)
+
+ONE_MINUTE = 60
+MAX_CALLS_PER_MINUTE = 30
 
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "top-secret!")
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
@@ -48,18 +52,38 @@ stripe_payment_link = os.getenv("STRIPE_PAYMENT_LINK")
 stripe.api_key = stripe_keys["secret_key"]
 
 
-def ask(message_log):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=message_log,
-        max_tokens=1024,
-        stop=None,
-        temperature=0.7,
-    )
+@sleep_and_retry
+@limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
+def ask_chat_conversation(message_log):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=message_log,
+            max_tokens=1024,
+            stop=None,
+            temperature=0.7,
+        )
 
-    reply_content = response.choices[0].message.content
+        reply_content = response.choices[0].message.content
 
-    return reply_content
+        return reply_content
+    except RateLimitError:
+        print("[Log] Rate limit reached")
+
+
+@sleep_and_retry
+@limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
+def ask_pronpt(prompt):
+    try:
+        response = openai.Completion.create(
+            model="text-davinci-003", prompt=prompt, max_tokens=100, temperature=0.7
+        )
+
+        reply_content = response.choices[0].text
+
+        return reply_content
+    except RateLimitError:
+        print("[Log] Rate limit reached")
 
 
 def append_interaction_to_chat_log(user_id, question):
@@ -94,13 +118,13 @@ def bot():
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": incoming_msg},
             ]
-            answer = ask(message)
+            answer = ask_chat_conversation(message)
             message.append({"role": "assistant", "content": answer})
             append_interaction_to_chat_log(user_id, message)
         else:
             message = user["history"]
             message.append({"role": "user", "content": incoming_msg})
-            answer = ask(message)
+            answer = ask_chat_conversation(message)
             user["history"].append({"role": "assistant", "content": answer})
             append_interaction_to_chat_log(user_id, user["history"])
 
@@ -109,8 +133,6 @@ def bot():
     return ""
 
 
-# TODO Coder les fois ou l'utilisateur se desinscrit.
-# TODO User recoit un lien d'annulation si /cancel
 @app.route("/webhook", methods=["POST"])
 def webhook():
     sig_header = request.headers.get("Stripe-Signature")
@@ -126,15 +148,30 @@ def webhook():
         # Invalid signature
         return jsonify({"error": "Invalid payload"}), 400
 
+    stripe_customer_id = request.json["data"]["object"]["customer"]
+    stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
+
     # Handle the event
-    if event.type == "payment_intent.succeeded":
-        stripe_customer_id = request.json["data"]["object"]["customer"]
-        stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
+    if event["type"] == "payment_intent.succeeded":
         try:
             _ = add_user(stripe_customer_phone)
             print("PaymentIntent was successful!")
         except (DuplicateUser, NoUserPhoneNumber) as e:
             print("[Log] No Phone number provided")
+    elif event["type"] in [
+        "customer.subscription.deleted",
+        "customer.subscription.paused",
+    ]:
+        delete_document({"phone_number": stripe_customer_phone})
+        print(" User unsubscribe.")
+    elif event.type == "customer.subscription.updated":
+        subscription = event.data.object
+        if (
+            subscription.status == "canceled"
+            and subscription.cancel_at_period_end == False
+        ):
+            delete_document({"phone_number": stripe_customer_phone})
+            print(" User unsubscribe.")
     else:
         print("Unhandled event type {}".format(event.type))
 
@@ -142,4 +179,4 @@ def webhook():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="127.0.0.1", port=5000)
