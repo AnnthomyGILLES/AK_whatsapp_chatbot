@@ -11,13 +11,13 @@ services:
       APP_PORT: 5000
       MONGODB_DATABASE: mydatabase
       MONGODB_HOSTNAME: mongodb
-      volumes:
-        - appdata:/app
-      depends_on:
-        - mongodb
-      networks:
-        - frontend
-        - backend
+    volumes:
+      - appdata:/app
+    depends_on:
+      - mongodb
+    networks:
+      - frontend
+      - backend
     ports:
       - "5000:50000"
   mongodb:
