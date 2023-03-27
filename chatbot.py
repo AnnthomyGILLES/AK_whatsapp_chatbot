@@ -5,7 +5,8 @@ import openai
 import stripe
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
-from flask_ngrok import run_with_ngrok
+from openai.error import RateLimitError
+from ratelimit import sleep_and_retry, limits
 from twilio.rest import Client
 
 from mongodb_db import (
@@ -21,7 +22,9 @@ from parse_phone_numbers import extract_phone_number
 load_dotenv()
 
 app = Flask(__name__)
-run_with_ngrok(app)
+
+ONE_MINUTE = 60
+MAX_CALLS_PER_MINUTE = 30
 
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "top-secret!")
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
@@ -48,18 +51,38 @@ stripe_payment_link = os.getenv("STRIPE_PAYMENT_LINK")
 stripe.api_key = stripe_keys["secret_key"]
 
 
-def ask(message_log):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=message_log,
-        max_tokens=1024,
-        stop=None,
-        temperature=0.7,
-    )
+@sleep_and_retry
+@limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
+def ask_chat_conversation(message_log):
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=message_log,
+            max_tokens=1024,
+            stop=None,
+            temperature=0.7,
+        )
 
-    reply_content = response.choices[0].message.content
+        reply_content = response.choices[0].message.content
 
-    return reply_content
+        return reply_content
+    except RateLimitError:
+        print("[Log] Rate limit reached")
+
+
+@sleep_and_retry
+@limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
+def ask_pronpt(prompt):
+    try:
+        response = openai.Completion.create(
+            model="text-davinci-003", prompt=prompt, max_tokens=100, temperature=0.7
+        )
+
+        reply_content = response.choices[0].text
+
+        return reply_content
+    except RateLimitError:
+        print("[Log] Rate limit reached")
 
 
 def append_interaction_to_chat_log(user_id, question):
