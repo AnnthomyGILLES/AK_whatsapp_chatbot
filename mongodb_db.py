@@ -19,6 +19,12 @@ users = db["users"]
 users.create_index("phone_number", unique=True)
 
 
+# delete a document
+def delete_document(query):
+    users.delete_one(query)
+    print("Document deleted successfully.")
+
+
 def update_history(user_id, message):
     query = {"_id": user_id}
     update = {"$set": {"history": message}}
