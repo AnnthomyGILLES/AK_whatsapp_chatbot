@@ -21,8 +21,7 @@ users.create_index("phone_number", unique=True)
 
 # delete a document
 def delete_document(query):
-    users.delete_one(query)
-    print("Document deleted successfully.")
+    return users.delete_one(query)
 
 
 def update_history(user_id, message):
@@ -43,7 +42,7 @@ def get_user_id_with_phone_number(phone_number):
 
 
 # define a function for adding a new user document
-def add_user(phone_number, is_active=True, history=None):
+def add_user(phone_number, current_period_end, history=None):
     if history is None:
         history = []
 
@@ -51,8 +50,8 @@ def add_user(phone_number, is_active=True, history=None):
         raise NoUserPhoneNumber("Provide a valid phone number.")
     user = {
         "phone_number": phone_number,
-        "is_active": is_active,
         "history": history,
+        "current_period_end": current_period_end,
     }
     try:
         result = users.insert_one(user)
@@ -67,7 +66,11 @@ def get_user(user_id):
 
 if __name__ == "__main__":
     # Add user
-    user = {"phone_number": "1234567890", "is_active": True, "history": None}
+    user = {
+        "phone_number": "1234567890",
+        "current_period_end": 1682564177,
+        "history": None,
+    }
     _ = add_user(**user)
 
     user_id = get_user_id_with_phone_number("1234567890")
