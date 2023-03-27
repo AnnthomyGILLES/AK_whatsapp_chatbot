@@ -5,6 +5,7 @@ import openai
 import stripe
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+from loguru import logger
 from openai.error import RateLimitError
 from ratelimit import sleep_and_retry, limits
 from twilio.rest import Client
@@ -133,6 +134,7 @@ def bot():
     return ""
 
 
+# TODO Anonymize phone number
 @app.route("/webhook", methods=["POST"])
 def webhook():
     sig_header = request.headers.get("Stripe-Signature")
@@ -148,35 +150,43 @@ def webhook():
         # Invalid signature
         return jsonify({"error": "Invalid payload"}), 400
 
-    stripe_customer_id = request.json["data"]["object"]["customer"]
+    object_ = event["data"]["object"]
+    event_type = event["type"]
+    stripe_customer_id = object_["customer"]
     stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
 
     # Handle the event
     if event["type"] == "payment_intent.succeeded":
         try:
-            _ = add_user(stripe_customer_phone)
+            id_invoice = object_["invoice"]
+            id_subscription = stripe.Invoice.retrieve(id_invoice)["subscription"]
+            sub_current_period_end = stripe.Subscription.retrieve(id_subscription)[
+                "current_period_end"
+            ]
+            _ = add_user(stripe_customer_phone, sub_current_period_end)
             print("PaymentIntent was successful!")
         except (DuplicateUser, NoUserPhoneNumber) as e:
             print("[Log] No Phone number provided")
-    elif event["type"] in [
+            logger.error(f"User deleted from database: {stripe_customer_phone}")
+        except DuplicateUser:
+            logger.error(f"Duplicated users creation attempt: {stripe_customer_phone}")
+
+    elif event_type in [
         "customer.subscription.deleted",
         "customer.subscription.paused",
     ]:
         delete_document({"phone_number": stripe_customer_phone})
-        print(" User unsubscribe.")
-    elif event.type == "customer.subscription.updated":
-        subscription = event.data.object
-        if (
-            subscription.status == "canceled"
-            and subscription.cancel_at_period_end == False
-        ):
+        logger.info(f"User deleted from database: {stripe_customer_phone}")
+    # TODO Handle subscription resume
+    elif event_type == "customer.subscription.updated" and object_.status == "canceled":
+        if not object_.cancel_at_period_end:
             delete_document({"phone_number": stripe_customer_phone})
-            print(" User unsubscribe.")
+            logger.info(f"User deleted from database: {stripe_customer_phone}")
     else:
-        print("Unhandled event type {}".format(event.type))
+        logger.warning("Unhandled event type {}".format(event_type))
 
     return jsonify({"status": "success"}), 200
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000)
+    app.run()
