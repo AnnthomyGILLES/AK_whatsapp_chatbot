@@ -1,4 +1,12 @@
+import datetime
+import os
+
 import pymongo
+from dotenv import load_dotenv
+
+load_dotenv()
+
+MONGODB_URI = os.getenv("MONGODB_URI")
 
 
 class DuplicateUser(Exception):
@@ -10,7 +18,7 @@ class NoUserPhoneNumber(Exception):
 
 
 # create a MongoDB client and connect to the database
-client = pymongo.MongoClient("mongodb://localhost:27017/")
+client = pymongo.MongoClient(MONGODB_URI)
 db = client["mydatabase"]
 
 # define the collection and document structure
