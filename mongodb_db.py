@@ -5,17 +5,6 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(".env"))
 
-# MONGODB_URI = (
-#     "mongodb://"
-#     + os.getenv("MONGODB_USERNAME")
-#     + ":"
-#     + os.getenv("MONGODB_PASSWORD")
-#     + "@mongodb"
-#     + ":27017/"
-#     + os.getenv("MONGODB_DATABASE")
-# )
-MONGODB_URI = "mongodb://ak_flaskuser:dQO0NmVMUr0U@mongodb:27017/mydatabase"
-
 
 class DuplicateUser(Exception):
     pass
@@ -26,7 +15,13 @@ class NoUserPhoneNumber(Exception):
 
 
 # create a MongoDB client and connect to the database
-client = pymongo.MongoClient(MONGODB_URI)
+client = pymongo.MongoClient(
+    host="mongodb",
+    port=27017,
+    username="ak_root",
+    password="s7LEOI5ugKmlXTPv",
+    authSource="admin",
+)
 db = client["mydatabase"]
 
 # define the collection and document structure

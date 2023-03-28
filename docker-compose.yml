@@ -1,4 +1,4 @@
-version: '3'
+version: '2.1'
 
 services:
   flask:
@@ -26,25 +26,15 @@ services:
     image: mongo:latest
     container_name: mongodb
     restart: unless-stopped
-    command: mongod --auth
+#    command: mongod --auth
 #    command: sh -c 'mongod --auth && /docker-entrypoint-initdb.d/init-mongo.sh'
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ak_root
-      MONGO_INITDB_ROOT_PASSWORD: s7LEOI5ugKmlXTPv
-      MONGO_INITDB_DATABASE: mydatabase
-      MONGODB_USERNAME: ak_flaskuser
-      MONGODB_PASSWORD: dQO0NmVMUr0U
-      MONGODB_DATA_DIR: /data/db
-      MONDODB_LOG_DIR: /dev/null
-#    env_file:
-#      - .env
-#      - .mongodb.env
+    env_file: [.env-mongo, .env]
     ports:
       - "27017:27017"
     volumes:
       - mongodbdata:/data/db
 #      - ./mongo-init:/docker-entrypoint-initdb.d
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     networks:
       - backend
 #    entrypoint: [ "/usr/bin/mongod", "--auth", "--config", "/etc/mongod.conf", "--bind_ip_all", "--replSet", "rs0" ]

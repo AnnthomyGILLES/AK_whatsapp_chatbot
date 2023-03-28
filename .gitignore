@@ -128,7 +128,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-.mongodb.env
+.env-mongo
 
 # Spyder project settings
 .spyderproject
