@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.10
+FROM python:latest
 
 # Set the working directory to /app
 WORKDIR /app
@@ -16,8 +16,5 @@ EXPOSE 5000
 # Define environment variable
 ENV FLASK_APP=chatbot.py
 
-# Set the directive to specify the executable that will run when the container is initiated
-ENTRYPOINT [ "python" ]
-
 # Run app.py when the container launches
-CMD [ "chatbot.py" ]
+CMD ["python", "chatbot.py"]
