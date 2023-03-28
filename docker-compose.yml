@@ -1,15 +1,14 @@
-version: '1.0.0'
-
 services:
   flask:
     build: .
     container_name: chatbot
-    restart: unless-stopped
+#    restart: unless-stopped
+    env_file:
+      - .env
     environment:
       APP_ENV: "prod"
       APP_DEBUG: "False"
       APP_PORT: 5000
-      MONGODB_DATABASE: mydatabase
       MONGODB_HOSTNAME: mongodb
     volumes:
       - appdata:/app
@@ -24,11 +23,15 @@ services:
     image: mongo:latest
     container_name: mongodb
     restart: unless-stopped
-    command: mongod --auth
+#    command: mongod --auth
+    command: sh -c 'mongod --auth && /docker-entrypoint-initdb.d/init-mongo.sh'
     env_file:
-      - .env
+      - .mongodb_env
+    ports:
+      - "27017:27017"
     volumes:
       - mongodbdata:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
     networks:
       - backend
 
