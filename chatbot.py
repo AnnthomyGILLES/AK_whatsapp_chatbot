@@ -1,5 +1,6 @@
 import datetime
 import os
+from pathlib import Path
 
 import openai
 import stripe
@@ -21,7 +22,8 @@ from mongodb_db import (
 )
 from parse_phone_numbers import extract_phone_number
 
-load_dotenv()
+env_path = Path(".", ".env")
+load_dotenv(dotenv_path=env_path)
 
 app = Flask(__name__)
 
@@ -103,7 +105,9 @@ def send_message(body_mess, phone_number):
 @app.route("/bot", methods=["POST"])
 def bot():
     incoming_msg = request.values["Body"].lower()
+    print(incoming_msg)
     phone_number = extract_phone_number(request.values["From"].lower())
+    print(phone_number)
 
     user_id = get_user_id_with_phone_number(phone_number)
     user = get_user(user_id)
@@ -189,4 +193,4 @@ def webhook():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=5000)

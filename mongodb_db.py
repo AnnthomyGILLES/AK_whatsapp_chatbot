@@ -1,12 +1,20 @@
-import datetime
-import os
+from pathlib import Path
 
 import pymongo
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(dotenv_path=Path(".env"))
 
-MONGODB_URI = os.getenv("MONGODB_URI")
+# MONGODB_URI = (
+#     "mongodb://"
+#     + os.getenv("MONGODB_USERNAME")
+#     + ":"
+#     + os.getenv("MONGODB_PASSWORD")
+#     + "@mongodb"
+#     + ":27017/"
+#     + os.getenv("MONGODB_DATABASE")
+# )
+MONGODB_URI = "mongodb://ak_flaskuser:dQO0NmVMUr0U@mongodb:27017/mydatabase"
 
 
 class DuplicateUser(Exception):
@@ -24,7 +32,8 @@ db = client["mydatabase"]
 # define the collection and document structure
 users = db["users"]
 
-users.create_index("phone_number", unique=True)
+# TODO Handle duplicate
+# users.create_index("phone_number", unique=True)
 
 
 # delete a document
