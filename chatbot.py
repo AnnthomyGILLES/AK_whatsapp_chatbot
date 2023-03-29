@@ -79,6 +79,16 @@ assister 24h/24 et 7j/7. Alors, commençons notre aventure ensemble ! 🚀"""
 @sleep_and_retry
 @limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
 def ask_chat_conversation(message_log):
+    """
+    Send a message to the GPT-3.5-turbo model and return the generated response.
+    This function is rate limited according to the specified limits.
+
+    Args:
+        message_log (list): A list of message dictionaries containing the conversation history.
+
+    Returns:
+        str: The content of the generated message.
+    """
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -97,7 +107,17 @@ def ask_chat_conversation(message_log):
 
 @sleep_and_retry
 @limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
-def ask_pronpt(prompt):
+def ask_prompt(prompt):
+    """
+    Send a prompt to the text-davinci-003 model and return the generated response.
+    This function is rate limited according to the specified limits.
+
+    Args:
+        prompt (str): The prompt to send to the model.
+
+    Returns:
+        str: The generated text response.
+    """
     try:
         response = openai.Completion.create(
             model="text-davinci-003", prompt=prompt, max_tokens=100, temperature=0.7
@@ -111,10 +131,24 @@ def ask_pronpt(prompt):
 
 
 def append_interaction_to_chat_log(user_id, question):
+    """
+    Update the chat history of a user with a new interaction.
+
+    Args:
+        user_id (str): The user's ID.
+        question (str): The question to add to the chat history.
+    """
     update_history(user_id, question)
 
 
 def send_message(body_mess, phone_number):
+    """
+    Send a WhatsApp message to the specified phone number using Twilio.
+
+    Args:
+        body_mess (str): The content of the message to send.
+        phone_number (str): The recipient's phone number.
+    """
     message = client.messages.create(
         from_=f"whatsapp:{twilio_phone_numer}",
         body=body_mess,
@@ -124,6 +158,16 @@ def send_message(body_mess, phone_number):
 
 
 def split_long_string(text, max_len=1200):
+    """
+    Split a long string into a list of strings of maximum length `max_len`.
+
+    Args:
+        text (str): The input text to be split.
+        max_len (int, optional): The maximum length of each chunk. Defaults to 1200.
+
+    Returns:
+        list[str]: A list of strings, each with a length not exceeding `max_len`.
+    """
     if len(text) <= max_len:
         return [text]
 
@@ -146,6 +190,13 @@ def split_long_string(text, max_len=1200):
 
 @app.route("/bot", methods=["POST"])
 def bot():
+    """
+    Handle incoming messages from users, process them, and send responses.
+    This function is designed to be used as an endpoint for a webhook.
+
+    Returns:
+        str: An empty string (required for Twilio to work correctly).
+    """
     incoming_msg = request.values["Body"].lower().strip()
     print(incoming_msg)
     phone_number = extract_phone_number(request.values["From"].lower())
@@ -189,6 +240,12 @@ def bot():
 # TODO Anonymize phone number
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    """
+    Handle Stripe webhook events, including payment success, subscription deletion, and subscription pausing.
+
+    Returns:
+        tuple: A JSON object with the status and an HTTP status code.
+    """
     sig_header = request.headers.get("Stripe-Signature")
 
     try:
