@@ -55,6 +55,25 @@ stripe_payment_link = os.getenv("STRIPE_PAYMENT_LINK")
 stripe.api_key = stripe_keys["secret_key"]
 
 
+# Welcome message
+WELCOME_MESSAGE = """Bonjour et bienvenue sur WhatIA ! 🎉
+
+Je suis votre assistant personnel intelligent, prêt à répondre à toutes vos questions et à vous aider avec vos 
+demandes. Propulsé par une puissante Intelligence Artificielle', je peux vous assister de manière précise et 
+efficace. Voici quelques exemples de ce que je peux faire pour vous : \n\n
+
+1️⃣ Répondre à des questions générales et complexes \n
+2️⃣ Vous fournir des informations détaillées sur des événements ou des lieux \n
+3️⃣ Vous aider avec des tâches quotidiennes, comme la rédaction de mails ou de messages \n
+4️⃣ Analyser et résumer des articles ou des documents pour vous \n\n
+
+Et bien plus encore ! Pour profiter pleinement de toutes mes fonctionnalités et bénéficier d'une expérience optimale, 
+je vous invite à vous abonner dès maintenant. Pour ce faire, veuillez simplement suivre le lien suivant. \n\n
+
+Si vous avez des questions ou si vous avez besoin d'aide, n'hésitez pas à me le faire savoir. Je suis là pour vous 
+assister 24h/24 et 7j/7. Alors, commençons notre aventure ensemble ! 🚀"""
+
+
 @sleep_and_retry
 @limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
 def ask_chat_conversation(message_log):
@@ -113,7 +132,7 @@ def bot():
     user = get_user(user_id)
 
     if user_id is None:
-        send_message(f"Inscrivez-vous pour utiliser WhatIA.", phone_number)
+        send_message(WELCOME_MESSAGE, phone_number)
         send_message(stripe_payment_link, phone_number)
         return ""
 

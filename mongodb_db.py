@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pymongo
@@ -14,21 +15,23 @@ class NoUserPhoneNumber(Exception):
     pass
 
 
+MONGODB_HOSTNAME = os.getenv("MONGODB_HOSTNAME")
+MONGODB_USERNAME = os.getenv("MONGODB_USERNAME")
+MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD")
+MONGODB_DATABASE = os.getenv("MONGODB_DATABASE")
+
 # create a MongoDB client and connect to the database
 client = pymongo.MongoClient(
-    host="mongodb",
+    host=MONGODB_HOSTNAME,
     port=27017,
-    username="ak_root",
-    password="s7LEOI5ugKmlXTPv",
-    authSource="admin",
+    username=MONGODB_USERNAME,
+    password=MONGODB_PASSWORD,
+    authSource=MONGODB_DATABASE,
 )
 db = client["mydatabase"]
 
 # define the collection and document structure
 users = db["users"]
-
-# TODO Handle duplicate
-# users.create_index("phone_number", unique=True)
 
 
 # delete a document

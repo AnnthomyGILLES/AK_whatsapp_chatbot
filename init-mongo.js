@@ -1,13 +1,3 @@
-// Connect to the admin database
-const adminDb = db.getSiblingDB("admin");
-
-// Create the root user
-adminDb.createUser({
-  user: "ak_root",
-  pwd: "s7LEOI5ugKmlXTPv",
-  roles: [{ role: "root", db: "admin" }],
-});
-
 // Connect to the target database
 const targetDb = db.getSiblingDB("mydatabase");
 
@@ -17,3 +7,9 @@ targetDb.createUser({
   pwd: "dQO0NmVMUr0U",
   roles: [{ role: "readWrite", db: "mydatabase" }],
 });
+
+// Create the "users" collection
+targetDb.createCollection("users");
+
+// Create a unique index on the "phone_number" field in the "users" collection
+targetDb.users.createIndex({ phone_number: 1 }, { unique: true });

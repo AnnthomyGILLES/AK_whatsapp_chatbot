@@ -1,17 +1,14 @@
-version: '2.1'
+version: '3'
 
 services:
   flask:
     build: .
     container_name: chatbot
-#    restart: unless-stopped
-#    env_file:
-#      - .env
+    restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      MONGODB_DATABASE: mydatabase
-      MONGODB_USERNAME: ak_flaskuser
-      MONGODB_PASSWORD: dQO0NmVMUr0U
-      MONGODB_HOSTNAME: mongodb
+      MONGODB_HOST: mongodb
     volumes:
       - appdata:/app
     depends_on:
@@ -26,18 +23,15 @@ services:
     image: mongo:latest
     container_name: mongodb
     restart: unless-stopped
-#    command: mongod --auth
-#    command: sh -c 'mongod --auth && /docker-entrypoint-initdb.d/init-mongo.sh'
+    command: ["--bind_ip_all"]
     env_file: [.env-mongo, .env]
     ports:
       - "27017:27017"
     volumes:
       - mongodbdata:/data/db
-#      - ./mongo-init:/docker-entrypoint-initdb.d
       - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     networks:
       - backend
-#    entrypoint: [ "/usr/bin/mongod", "--auth", "--config", "/etc/mongod.conf", "--bind_ip_all", "--replSet", "rs0" ]
 
   webserver:
     image: nginx:latest
