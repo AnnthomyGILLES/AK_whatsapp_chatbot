@@ -20,6 +20,7 @@ from mongodb_db import (
     NoUserPhoneNumber,
     DuplicateUser,
     delete_document,
+    keep_last_n_records,
 )
 from parse_phone_numbers import extract_phone_number
 
@@ -165,17 +166,22 @@ def bot():
                 {"role": "user", "content": incoming_msg},
             ]
             answer = ask_chat_conversation(message)
+            answers = split_long_string(answer)
+            for answer in answers:
+                send_message(answer, phone_number)
             message.append({"role": "assistant", "content": answer})
             append_interaction_to_chat_log(user_id, message)
+            keep_last_n_records()
         else:
             message = user["history"]
             message.append({"role": "user", "content": incoming_msg})
             answer = ask_chat_conversation(message)
+            answers = split_long_string(answer)
+            for answer in answers:
+                send_message(answer, phone_number)
             user["history"].append({"role": "assistant", "content": answer})
             append_interaction_to_chat_log(user_id, user["history"])
-        answers = split_long_string(answer)
-        for answer in answers:
-            send_message(answer, phone_number)
+            keep_last_n_records()
 
     return ""
 

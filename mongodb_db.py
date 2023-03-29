@@ -39,6 +39,16 @@ def delete_document(query):
     return users.delete_one(query)
 
 
+def keep_last_n_records(n=4):
+    # Update all documents in the collection
+    for document in users.find():
+        history = document["history"]
+        updated_history = history[-n:]  # Keep only the last three records
+        users.update_one(
+            {"_id": document["_id"]}, {"$set": {"history": updated_history}}
+        )
+
+
 def update_history(user_id, message):
     query = {"_id": user_id}
     update = {"$set": {"history": message}}
