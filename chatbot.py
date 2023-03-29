@@ -145,7 +145,7 @@ def split_long_string(text, max_len=1200):
 
 @app.route("/bot", methods=["POST"])
 def bot():
-    incoming_msg = request.values["Body"].lower()
+    incoming_msg = request.values["Body"].lower().strip()
     print(incoming_msg)
     phone_number = extract_phone_number(request.values["From"].lower())
     print(phone_number)
