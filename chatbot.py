@@ -1,5 +1,6 @@
 import datetime
 import os
+import re
 from pathlib import Path
 
 import openai
@@ -121,6 +122,27 @@ def send_message(body_mess, phone_number):
     print(message.sid)
 
 
+def split_long_string(text, max_len=1200):
+    if len(text) <= max_len:
+        return [text]
+
+    sentences = re.split("(?<=[.!?]) +", text)
+    result = []
+    current_chunk = ""
+
+    for sentence in sentences:
+        if len(current_chunk) + len(sentence) + 1 <= max_len:
+            current_chunk += " " + sentence
+        else:
+            result.append(current_chunk.strip())
+            current_chunk = sentence
+
+    if current_chunk:
+        result.append(current_chunk.strip())
+
+    return result
+
+
 @app.route("/bot", methods=["POST"])
 def bot():
     incoming_msg = request.values["Body"].lower()
@@ -151,8 +173,9 @@ def bot():
             answer = ask_chat_conversation(message)
             user["history"].append({"role": "assistant", "content": answer})
             append_interaction_to_chat_log(user_id, user["history"])
-
-        send_message(answer, phone_number)
+        answers = split_long_string(answer)
+        for answer in answers:
+            send_message(answer, phone_number)
 
     return ""
 
