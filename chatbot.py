@@ -217,7 +217,7 @@ def webhook():
             ]
             _ = add_user(stripe_customer_phone, sub_current_period_end)
             print("PaymentIntent was successful!")
-        except (DuplicateUser, NoUserPhoneNumber) as e:
+        except NoUserPhoneNumber:
             print("[Log] No Phone number provided")
             logger.error(f"User deleted from database: {stripe_customer_phone}")
         except DuplicateUser:
