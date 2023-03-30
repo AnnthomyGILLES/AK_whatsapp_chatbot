@@ -4,6 +4,7 @@ from ratelimit import sleep_and_retry, limits
 
 ONE_MINUTE = 60
 MAX_CALLS_PER_MINUTE = 30
+MAX_TOKENS = 500
 
 
 @sleep_and_retry
@@ -23,7 +24,7 @@ def ask_chat_conversation(message_log):
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=message_log,
-            max_tokens=1024,
+            max_tokens=MAX_TOKENS,
             stop=None,
             temperature=0.7,
         )
