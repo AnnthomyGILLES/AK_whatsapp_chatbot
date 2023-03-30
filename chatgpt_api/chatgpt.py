@@ -2,7 +2,8 @@ import openai
 from openai.error import RateLimitError
 from ratelimit import sleep_and_retry, limits
 
-from chatbot import MAX_CALLS_PER_MINUTE, ONE_MINUTE
+ONE_MINUTE = 60
+MAX_CALLS_PER_MINUTE = 30
 
 
 @sleep_and_retry
