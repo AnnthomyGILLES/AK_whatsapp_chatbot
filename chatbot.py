@@ -22,14 +22,12 @@ from mongodb_db import (
     keep_last_n_records,
 )
 from parse_phone_numbers import extract_phone_number
+from utils import count_tokens
 
 env_path = Path(".", ".env")
 load_dotenv(dotenv_path=env_path)
 
 app = Flask(__name__)
-
-ONE_MINUTE = 60
-MAX_CALLS_PER_MINUTE = 30
 
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "top-secret!")
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
@@ -37,6 +35,7 @@ app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
 # OpenAI Chat GPT
 openai.api_key = os.getenv("OPENAI_API_KEY")
 completion = openai.Completion()
+MAX_TOKEN_LENGTH = os.getenv("MAX_TOKEN_LENGTH", 500)
 
 # Twilio
 account_sid = os.getenv("TWILIO_ACCOUNT_SID")
@@ -143,6 +142,10 @@ def bot():
         str: An empty string (required for Twilio to work correctly).
     """
     incoming_msg = request.values["Body"].lower().strip()
+    nb_tokens = count_tokens(incoming_msg)
+    print(nb_tokens)
+    if nb_tokens >= int(MAX_TOKEN_LENGTH):
+        send_message("Votre question est beaucoup trop longue.", nb_tokens)
     print(incoming_msg)
     phone_number = extract_phone_number(request.values["From"].lower())
     print(phone_number)
@@ -208,7 +211,7 @@ def webhook():
     event_type = event["type"]
     stripe_customer_id = object_["customer"]
     stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
-
+    print(stripe_customer_id, stripe_customer_phone)
     # Handle the event
     if event["type"] == "payment_intent.succeeded":
         try:
