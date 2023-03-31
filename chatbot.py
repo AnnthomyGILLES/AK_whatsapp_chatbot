@@ -174,16 +174,21 @@ def bot():
     Returns:
         str: An empty string (required for Twilio to work correctly).
     """
-    current_time = datetime.datetime.now()
+    current_time = datetime.datetime.utcnow()
     oldest_allowed_timestamp = current_time - datetime.timedelta(minutes=HISTORY_TTL)
     incoming_msg = request.values["Body"].lower().strip()
-    nb_tokens = count_tokens(incoming_msg)
-    print(nb_tokens)
-    if nb_tokens >= int(MAX_TOKEN_LENGTH):
-        send_message("Votre question est beaucoup trop longue.", nb_tokens)
-    print(incoming_msg)
+    media_url = request.form.get("MediaUrl0")
     phone_number = extract_phone_number(request.values["From"].lower())
-    print(phone_number)
+    nb_tokens = count_tokens(incoming_msg)
+
+    if nb_tokens >= int(MAX_TOKEN_LENGTH):
+        send_message("Ta question est beaucoup trop longue.", phone_number)
+        return ""
+    if media_url:
+        send_message("Il faut écrire pour discuter avec moi.", phone_number)
+        return ""
+    if not incoming_msg:
+        return ""
 
     doc = find_document("phone_number", phone_number)
 
