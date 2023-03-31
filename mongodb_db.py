@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pymongo
 from dotenv import load_dotenv
+from loguru import logger
 
 load_dotenv(dotenv_path=Path(".env"))
 
@@ -48,7 +49,7 @@ def reset_document(doc):
             {"_id": doc["_id"]},
             {"$set": {"history_timestamp": timestamp, "history": []}},
         )
-        print(f"Added timestamp {timestamp} to document {doc['_id']}")
+        logger.info(f"Added timestamp {timestamp} to document {doc['_id']}")
     else:
         print("No matching document found.")
 
@@ -66,8 +67,7 @@ def find_document(field_name, field_value):
     # return the document if it was found
     if doc:
         return doc
-    else:
-        return None
+    return None
 
 
 # define a function for getting the user id based on phone number
@@ -75,8 +75,6 @@ def get_user_id_with_phone_number(phone_number):
     doc = find_document("phone_number", phone_number)
     if doc:
         return doc["_id"]
-    else:
-        return None
 
 
 # define a function for adding a new user document
