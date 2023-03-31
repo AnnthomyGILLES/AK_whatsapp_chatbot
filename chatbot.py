@@ -12,18 +12,18 @@ from twilio.rest import Client
 
 from chatgpt_api.chatgpt import ask_chat_conversation
 from mongodb_db import (
-    get_user_id_with_phone_number,
-    update_history,
-    get_user,
     add_user,
     NoUserPhoneNumber,
     DuplicateUser,
     delete_document,
-    keep_last_n_records,
+    update_user_history,
+    find_document,
+    reset_document,
 )
 from parse_phone_numbers import extract_phone_number
 from utils import count_tokens
 
+HISTORY_TTL = 10
 env_path = Path(".", ".env")
 load_dotenv(dotenv_path=env_path)
 
@@ -72,17 +72,6 @@ je vous invite à vous abonner dès maintenant. Pour ce faire, veuillez simpleme
 
 Si vous avez des questions ou si vous avez besoin d'aide, n'hésitez pas à me le faire savoir. Je suis là pour vous 
 assister 24h/24 et 7j/7. Alors, commençons notre aventure ensemble ! 🚀"""
-
-
-def append_interaction_to_chat_log(user_id, question):
-    """
-    Update the chat history of a user with a new interaction.
-
-    Args:
-        user_id (str): The user's ID.
-        question (str): The question to add to the chat history.
-    """
-    update_history(user_id, question)
 
 
 def send_message(body_mess, phone_number):
@@ -141,6 +130,8 @@ def bot():
     Returns:
         str: An empty string (required for Twilio to work correctly).
     """
+    current_time = datetime.datetime.now()
+    oldest_allowed_timestamp = current_time - datetime.timedelta(minutes=HISTORY_TTL)
     incoming_msg = request.values["Body"].lower().strip()
     nb_tokens = count_tokens(incoming_msg)
     print(nb_tokens)
@@ -150,37 +141,35 @@ def bot():
     phone_number = extract_phone_number(request.values["From"].lower())
     print(phone_number)
 
-    user_id = get_user_id_with_phone_number(phone_number)
-    user = get_user(user_id)
+    doc = find_document("phone_number", phone_number)
 
-    if user_id is None:
+    if doc is None:
         send_message(WELCOME_MESSAGE, phone_number)
         send_message(stripe_payment_link, phone_number)
         return ""
 
     if incoming_msg:
-        if not user["history"]:
+        if doc["history"]:
+            if doc["history_timestamp"] < oldest_allowed_timestamp:
+                reset_document(doc)
+                message = [
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": incoming_msg},
+                ]
+            else:
+                message = doc["history"]
+                message.append({"role": "user", "content": incoming_msg})
+        else:
             message = [
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": incoming_msg},
             ]
-            answer = ask_chat_conversation(message)
-            answers = split_long_string(answer)
-            for answer in answers:
-                send_message(answer, phone_number)
-            message.append({"role": "assistant", "content": answer})
-            append_interaction_to_chat_log(user_id, message)
-            keep_last_n_records()
-        else:
-            message = user["history"]
-            message.append({"role": "user", "content": incoming_msg})
-            answer = ask_chat_conversation(message)
-            answers = split_long_string(answer)
-            for answer in answers:
-                send_message(answer, phone_number)
-            user["history"].append({"role": "assistant", "content": answer})
-            append_interaction_to_chat_log(user_id, user["history"])
-            keep_last_n_records()
+        answer = ask_chat_conversation(message)
+        answers = split_long_string(answer)
+        for answer in answers:
+            send_message(answer, phone_number)
+        message.append({"role": "assistant", "content": answer})
+        update_user_history(phone_number, message)
 
     return ""
 

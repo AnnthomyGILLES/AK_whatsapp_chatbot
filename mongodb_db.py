@@ -1,4 +1,4 @@
-import os
+import datetime
 from pathlib import Path
 
 import pymongo
@@ -39,29 +39,42 @@ def delete_document(query):
     return users.delete_one(query)
 
 
-def keep_last_n_records(n=4):
-    # Update all documents in the collection
-    for document in users.find():
-        history = document["history"]
-        updated_history = history[-n:]  # Keep only the last three records
+def reset_document(doc):
+    # check if a matching document was found
+    if doc:
+        # add a new "timestamp" field to the document with the current time
+        timestamp = datetime.datetime.now()
         users.update_one(
-            {"_id": document["_id"]}, {"$set": {"history": updated_history}}
+            {"_id": doc["_id"]},
+            {"$set": {"history_timestamp": timestamp, "history": []}},
         )
+        print(f"Added timestamp {timestamp} to document {doc['_id']}")
+    else:
+        print("No matching document found.")
 
 
-def update_history(user_id, message):
-    query = {"_id": user_id}
+def update_user_history(phone_number, message=None):
+    query = {"phone_number": phone_number}
     update = {"$set": {"history": message}}
     _ = users.find_one_and_update(query, update, upsert=True)
 
 
+def find_document(field_name, field_value):
+    # search for a document with a specific field value
+    doc = users.find_one({field_name: field_value})
+
+    # return the document if it was found
+    if doc:
+        return doc
+    else:
+        return None
+
+
 # define a function for getting the user id based on phone number
 def get_user_id_with_phone_number(phone_number):
-    query = {"phone_number": phone_number}
-    projection = {"_id": 1}
-    result = users.find_one(query, projection)
-    if result:
-        return result["_id"]
+    doc = find_document("phone_number", phone_number)
+    if doc:
+        return doc["_id"]
     else:
         return None
 
@@ -101,8 +114,8 @@ if __name__ == "__main__":
     user_id = get_user_id_with_phone_number("1234567890")
 
     # call the add_history function to update the user's history field
-    update_history(user_id, "User created")
-    update_history(user_id, "User logged in")
+    update_user_history(user_id, "User created")
+    update_user_history(user_id, "User logged in")
 
     res = get_user(user_id)
     print(res)
