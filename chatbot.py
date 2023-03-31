@@ -64,14 +64,58 @@ efficace. Voici quelques exemples de ce que je peux faire pour vous : \n\n
 
 1️⃣ Répondre à des questions générales et complexes \n
 2️⃣ Vous fournir des informations détaillées sur des événements ou des lieux \n
-3️⃣ Vous aider avec des tâches quotidiennes, comme la rédaction de mails ou de messages \n
-4️⃣ Analyser et résumer des articles ou des documents pour vous \n\n
+3️⃣ Vous aider avec des tâches quotidiennes, comme la rédaction de mails ou la proposition de recettes \n
+4️⃣ Analyser et résumer des articles \n
+5️⃣ Traduire des phrases ou des textes complets dans plusieurs langues \n
+6️⃣ Répondre à des questions d'entretien \n
+7️⃣ Et bien plus! Tapez la commande "/example" pour avoir une liste d'exemples de ce que vous pouvez demanez \n\n
 
 Et bien plus encore ! Pour profiter pleinement de toutes mes fonctionnalités et bénéficier d'une expérience optimale, 
 je vous invite à vous abonner dès maintenant. Pour ce faire, veuillez simplement suivre le lien suivant. \n\n
 
 Si vous avez des questions ou si vous avez besoin d'aide, n'hésitez pas à me le faire savoir. Je suis là pour vous 
 assister 24h/24 et 7j/7. Alors, commençons notre aventure ensemble ! 🚀"""
+
+
+EXAMPLE_MESSAGE = """
+📖 Demander une définition : "Qu'est-ce que le machine learning ?"
+🚗 Obtenir une explication : "Comment fonctionne un moteur à combustion interne ?"
+🍽️ Demander une recommandation : "Quel est le meilleur restaurant italien de la ville ?"
+🎁 Obtenir des suggestions : "Pouvez-vous me suggérer des idées pour un cadeau d'anniversaire pour mon frère ?"
+📜 Demander des informations sur l'histoire : "Quel est le contexte historique de la Révolution française ?"
+💡 Obtenir des conseils : "Comment puis-je améliorer mes compétences en leadership ?"
+📊 Demander des statistiques : "Quel est le taux de chômage en France actuellement ?"
+🖥️ Obtenir des informations sur un produit ou un service : "Pouvez-vous me dire ce que propose ce logiciel de gestion de projet ?"
+🌍 Demander une traduction : "Pouvez-vous traduire cette phrase en espagnol ?"
+💬 Obtenir une citation célèbre : "Pouvez-vous me donner une citation célèbre d'Albert Einstein ?"
+🌐 Demander de l'aide pour résoudre un problème : "Comment puis-je résoudre un problème de connexion internet ?"
+📰 Obtenir des informations sur les actualités : "Quels sont les derniers développements dans la pandémie de COVID-19 ?"
+🤔 Demander une opinion : "Que pensez-vous de cette nouvelle politique gouvernementale ?"
+📚 Obtenir une recommandation de lecture : "Pouvez-vous me recommander un bon livre sur la psychologie ?"
+🎥 Demander des informations sur les célébrités : "Quel est le dernier film dans lequel a joué Leonardo DiCaprio ?
+💼 Obtenir des conseils pour développer une carrière : "Comment puis-je me démarquer lors d'un entretien d'embauche ?"
+🎓 Demander des informations sur les formations professionnelles : "Quelles sont les options de formation pour devenir développeur web ?"
+🚀 Demander des informations sur les start-ups ou les entreprises en croissance : "Quelles sont les start-ups les plus prometteuses du moment ?"
+🌴 Obtenir des recommandations de voyages : "Quelles sont les meilleures destinations pour un séjour de détente en Thaïlande ?"
+📈 Demander des conseils pour investir : "Quelles sont les meilleures options d'investissement pour un débutant ?"
+🏋️‍♂️ Demander des conseils pour la santé et le bien-être : "Comment puis-je trouver le meilleur entraîneur personnel pour mes besoins ?"
+🤝 Obtenir des informations sur les réseaux professionnels : "Quels sont les meilleurs événements de networking pour rencontrer des professionnels de mon secteur ?"
+🚘 Demander des informations sur l'achat ou la location de voitures : "Quelles sont les meilleures options pour acheter ou louer une voiture en tant que jeune actif ?"
+💻 Obtenir des conseils pour travailler à distance : "Comment puis-je optimiser mon espace de travail à domicile pour une meilleure productivité ?"
+🏥 Demander des informations sur la santé/ les médicaments : "Comment puis-je prévenir l'arthrite ?"
+📚 Obtenir des recommandations de lectures/ restaurants/ magasins : "Pouvez-vous me recommander un bon livre sur l'histoire de France ?"
+🎭 Demander des informations sur les événements culturels/ sur les activités en plein air : "Quels sont les meilleurs parcs pour faire une promenade dans la ville ?"
+🎵 Demander des recommandations musicales : "Pouvez-vous me recommander un album de jazz à écouter ?"
+🎥 Obtenir des suggestions de films ou de séries : "Quel est le meilleur film à regarder sur Netflix en ce moment ?"
+🚗 Demander des informations sur les voitures : "Quelle est la meilleure voiture pour les longs trajets ?"
+"""
+
+logger.remove(0)
+logger.add(
+    sys.stderr,
+    format="{time:HH:mm:ss.SS} | {file} took {elapsed} to execute | {level} | {message} ",
+    colorize=True,
+)
 
 
 def send_message(body_mess, phone_number):
