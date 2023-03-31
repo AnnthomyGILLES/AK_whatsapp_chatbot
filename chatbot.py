@@ -254,7 +254,11 @@ def webhook():
                 "current_period_end"
             ]
             _ = add_user(stripe_customer_phone, sub_current_period_end)
-            print("PaymentIntent was successful!")
+            send_message(
+                """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi nous.
+                Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide.""",
+                stripe_customer_phone,
+            )
         except NoUserPhoneNumber:
             print("[Log] No Phone number provided")
             logger.error(f"User deleted from database: {stripe_customer_phone}")
