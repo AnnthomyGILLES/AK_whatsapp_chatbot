@@ -1,6 +1,5 @@
 import datetime
 import os
-import re
 import sys
 from pathlib import Path
 
@@ -11,6 +10,7 @@ from flask import Flask, request, jsonify
 from loguru import logger
 from twilio.rest import Client
 
+from audio.transcription import audio_to_text
 from chatgpt_api.chatgpt import ask_chat_conversation
 from mongodb_db import (
     add_user,
@@ -23,7 +23,7 @@ from mongodb_db import (
     increment_nb_tokens,
 )
 from parse_phone_numbers import extract_phone_number
-from utils import count_tokens
+from utils import count_tokens, split_long_string, get_audio_duration
 
 HISTORY_TTL = 10
 env_path = Path(".", ".env")
@@ -138,37 +138,6 @@ def send_message(body_mess, phone_number):
     print(message.sid)
 
 
-def split_long_string(text, max_len=1200):
-    """
-    Split a long string into a list of strings of maximum length `max_len`.
-
-    Args:
-        text (str): The input text to be split.
-        max_len (int, optional): The maximum length of each chunk. Defaults to 1200.
-
-    Returns:
-        list[str]: A list of strings, each with a length not exceeding `max_len`.
-    """
-    if len(text) <= max_len:
-        return [text]
-
-    sentences = re.split("(?<=[.!?]) +", text)
-    result = []
-    current_chunk = ""
-
-    for sentence in sentences:
-        if len(current_chunk) + len(sentence) + 1 <= max_len:
-            current_chunk += " " + sentence
-        else:
-            result.append(current_chunk.strip())
-            current_chunk = sentence
-
-    if current_chunk:
-        result.append(current_chunk.strip())
-
-    return result
-
-
 @app.route("/bot", methods=["POST"])
 def bot():
     """
@@ -181,15 +150,24 @@ def bot():
     current_time = datetime.datetime.utcnow()
     oldest_allowed_timestamp = current_time - datetime.timedelta(minutes=HISTORY_TTL)
     incoming_msg = request.values["Body"].lower().strip()
-    media_url = request.form.get("MediaUrl0")
     phone_number = extract_phone_number(request.values["From"].lower())
+
+    media_url = request.form.get("MediaUrl0")
+    if not incoming_msg:
+        if media_url and request.form["MediaContentType0"] == "audio/ogg":
+            duration = get_audio_duration(media_url)
+            incoming_msg = audio_to_text(media_url)
+        else:
+            send_message(
+                "Il faut écrire un message textuel ou enregistrer un audio pour discuter avec moi.",
+                phone_number,
+            )
+            return ""
+
     nb_tokens = count_tokens(incoming_msg)
 
     if nb_tokens >= int(MAX_TOKEN_LENGTH):
         send_message("Ta question est beaucoup trop longue.", phone_number)
-        return ""
-    if media_url:
-        send_message("Il faut écrire pour discuter avec moi.", phone_number)
         return ""
     if not incoming_msg:
         return ""
