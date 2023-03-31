@@ -117,6 +117,17 @@ def get_user(user_id):
     return users.find_one({"_id": user_id})
 
 
+# TODO run on a daily basis
+def delete_ended_subsciption():
+    # Get today's date and time as a datetime object
+    today_timestamp = datetime.datetime.timestamp(
+        datetime.datetime.today() - datetime.timedelta(hours=24)
+    )
+    # Delete documents where the current_period_end field is older than today's date
+    result = users.delete_many({"current_period_end": {"$lt": today_timestamp}})
+    logger.info(f"Deleted {result.deleted_count} documents.")
+
+
 if __name__ == "__main__":
     # Add user
     user = {
