@@ -44,14 +44,29 @@ def reset_document(doc):
     # check if a matching document was found
     if doc:
         # add a new "timestamp" field to the document with the current time
-        timestamp = datetime.datetime.now()
+        timestamp = datetime.datetime.utcnow()
         users.update_one(
             {"_id": doc["_id"]},
             {"$set": {"history_timestamp": timestamp, "history": []}},
         )
         logger.info(f"Added timestamp {timestamp} to document {doc['_id']}")
     else:
-        print("No matching document found.")
+        logger.info("No matching document found.")
+
+
+def increment_nb_tokens(doc, amount):
+    # increment the field by the specified amount for the specified document
+    users.update_one({"_id": doc["_id"]}, {"$inc": {"nb_tokens": amount}})
+
+
+def reset_tokens():
+    # get today's date
+    today_timestamp = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+    # reset nb_tokens field to 0 for all documents where current_period_end is older than today
+    result = users.update_many(
+        {"current_period_end": {"$lt": today_timestamp}}, {"$set": {"nb_tokens": 0}}
+    )
+    logger.info(f"{result.modified_count} tokens resetted.")
 
 
 def update_user_history(phone_number, message=None):
@@ -84,10 +99,12 @@ def add_user(phone_number, current_period_end, history=None):
 
     if phone_number is None:
         raise NoUserPhoneNumber("Provide a valid phone number.")
+    current_period_end = datetime.datetime.utcfromtimestamp(current_period_end)
     user = {
         "phone_number": phone_number,
         "history": history,
         "current_period_end": current_period_end,
+        "nb_tokens": 0,
     }
     try:
         result = users.insert_one(user)
