@@ -192,28 +192,30 @@ def bot():
         send_message(stripe_payment_link, phone_number)
         return ""
 
-    if incoming_msg:
-        if doc["history"]:
-            if doc["history_timestamp"] < oldest_allowed_timestamp:
-                reset_document(doc)
-                message = [
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": incoming_msg},
-                ]
-            else:
-                message = doc["history"]
-                message.append({"role": "user", "content": incoming_msg})
-        else:
+    if doc["history"]:
+        if doc["history_timestamp"] < oldest_allowed_timestamp:
+            reset_document(doc)
             message = [
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": incoming_msg},
             ]
-        answer = ask_chat_conversation(message)
-        answers = split_long_string(answer)
-        for answer in answers:
-            send_message(answer, phone_number)
-        message.append({"role": "assistant", "content": answer})
-        update_user_history(phone_number, message)
+        else:
+            message = doc["history"]
+            message.append({"role": "user", "content": incoming_msg})
+    else:
+        reset_document(doc)
+        message = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": incoming_msg},
+        ]
+    answer = ask_chat_conversation(message)
+    nb_tokens += count_tokens(answer)
+    increment_nb_tokens(doc, nb_tokens)
+    answers = split_long_string(answer)
+    for answer in answers:
+        send_message(answer, phone_number)
+    message.append({"role": "assistant", "content": answer})
+    update_user_history(phone_number, message)
 
     return ""
 
