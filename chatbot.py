@@ -1,6 +1,7 @@
 import datetime
 import os
 import re
+import sys
 from pathlib import Path
 
 import openai
@@ -19,6 +20,7 @@ from mongodb_db import (
     update_user_history,
     find_document,
     reset_document,
+    increment_nb_tokens,
 )
 from parse_phone_numbers import extract_phone_number
 from utils import count_tokens
