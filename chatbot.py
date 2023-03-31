@@ -57,6 +57,8 @@ stripe_payment_link = os.getenv("STRIPE_PAYMENT_LINK")
 stripe.api_key = stripe_keys["secret_key"]
 
 
+app = Flask(__name__)
+
 # Welcome message
 WELCOME_MESSAGE = """Bonjour et bienvenue sur WhatIA ! 🎉
 
