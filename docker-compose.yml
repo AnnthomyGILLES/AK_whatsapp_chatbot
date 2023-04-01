@@ -11,6 +11,7 @@ services:
       MONGODB_HOST: mongodb
     volumes:
       - appdata:/app
+      - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
       - mongodb
     networks:
@@ -42,6 +43,7 @@ services:
       - "443:443"
     volumes:
       - nginxdata:/var/log/nginx
+      - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
       - flask
     networks:

@@ -56,7 +56,6 @@ stripe_keys = {
 stripe_payment_link = os.getenv("STRIPE_PAYMENT_LINK")
 stripe.api_key = stripe_keys["secret_key"]
 
-
 app = Flask(__name__)
 
 # Welcome message
@@ -245,9 +244,14 @@ def webhook():
             request.data, sig_header, stripe_keys["endpoint_secret"]
         )
     except ValueError as e:
+        print("ValueError ******")
+        logger.info("ValueError ******")
         # Invalid payload
         return jsonify({"error": "Invalid payload"}), 400
     except stripe.error.SignatureVerificationError as e:
+        print("SignatureVerificationError ******")
+        logger.info("SignatureVerificationError ******")
+
         # Invalid signature
         return jsonify({"error": "Invalid payload"}), 400
 
@@ -294,4 +298,11 @@ def webhook():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        ssl_context=(
+            "/etc/letsencrypt/live/pay.whatia.fr/fullchain.pem",
+            "/etc/letsencrypt/live/pay.wha-pem",
+        ),
+    )
