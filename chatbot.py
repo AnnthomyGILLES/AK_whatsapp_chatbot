@@ -62,7 +62,7 @@ app = Flask(__name__)
 WELCOME_MESSAGE = """Bonjour et bienvenue sur WhatIA ! 🎉
 
 Je suis votre assistant personnel intelligent, prêt à répondre à toutes vos questions et à vous aider avec vos 
-demandes. Propulsé par une puissante Intelligence Artificielle', je peux vous assister de manière précise et 
+demandes. Propulsé par une puissante Intelligence Artificielle, je peux vous assister de manière précise et 
 efficace. Voici quelques exemples de ce que je peux faire pour vous : \n\n
 
 1️⃣ Répondre à des questions générales et complexes \n
@@ -71,10 +71,9 @@ efficace. Voici quelques exemples de ce que je peux faire pour vous : \n\n
 4️⃣ Analyser et résumer des articles \n
 5️⃣ Traduire des phrases ou des textes complets dans plusieurs langues \n
 6️⃣ Répondre à des questions d'entretien \n
-7️⃣ Et bien plus! Tapez la commande "/example" pour avoir une liste d'exemples de ce que vous pouvez demanez \n\n
+7️⃣ Et bien plus! \n\n
 
-Et bien plus encore ! Pour profiter pleinement de toutes mes fonctionnalités et bénéficier d'une expérience optimale, 
-je vous invite à vous abonner dès maintenant. Pour ce faire, veuillez simplement suivre le lien suivant. \n\n
+Et bien plus encore ! \n\n
 
 Si vous avez des questions ou si vous avez besoin d'aide, n'hésitez pas à me le faire savoir. Je suis là pour vous 
 assister 24h/24 et 7j/7. Alors, commençons notre aventure ensemble ! 🚀"""
@@ -197,7 +196,17 @@ def bot():
 
     if doc is None:
         send_message(WELCOME_MESSAGE, phone_number)
-        send_message(stripe_payment_link, phone_number)
+        send_message(
+            "Pour profiter pleinement de toutes mes fonctionnalités et bénéficier d'une expérience optimale,"
+            "je vous invite à vous abonner dès maintenant. C'est 9,90€/mois, vous avez droit à 1 jour d'essai "
+            "satisfait.e ou remboursé.e et c'est sans engagement!\n\n",
+            phone_number,
+        )
+        time.sleep(0.5)
+        send_message(
+            stripe_payment_link,
+            phone_number,
+        )
         return ""
 
     if doc["history"]:
