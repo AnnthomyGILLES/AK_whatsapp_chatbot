@@ -312,6 +312,6 @@ if __name__ == "__main__":
         port=5000,
         ssl_context=(
             "/etc/letsencrypt/live/pay.whatia.fr/fullchain.pem",
-            "/etc/letsencrypt/live/pay.wha-pem",
+            "/etc/letsencrypt/live/pay.whatia.fr/privkey.pem",
         ),
     )
