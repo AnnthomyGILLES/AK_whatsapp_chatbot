@@ -4,7 +4,7 @@ from ratelimit import sleep_and_retry, limits
 
 ONE_MINUTE = 60
 MAX_CALLS_PER_MINUTE = 30
-MAX_TOKENS = 500
+MAX_TOKENS = 400
 
 
 @sleep_and_retry

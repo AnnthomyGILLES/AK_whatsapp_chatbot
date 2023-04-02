@@ -37,7 +37,7 @@ app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
 # OpenAI Chat GPT
 openai.api_key = os.getenv("OPENAI_API_KEY")
 completion = openai.Completion()
-MAX_TOKEN_LENGTH = os.getenv("MAX_TOKEN_LENGTH", 500)
+MAX_TOKEN_LENGTH = os.getenv("MAX_TOKEN_LENGTH", 200)
 
 # Twilio
 account_sid = os.getenv("TWILIO_ACCOUNT_SID")
