@@ -246,56 +246,27 @@ def bot():
 # TODO Anonymize phone number
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    """
-    Handle Stripe webhook events, including payment success, subscription deletion, and subscription pausing.
-
-    Returns:
-        tuple: A JSON object with the status and an HTTP status code.
-    """
+    payload = request.data.decode("utf-8")
     sig_header = request.headers.get("Stripe-Signature")
 
     try:
         event = stripe.Webhook.construct_event(
-            request.data, sig_header, stripe_keys["endpoint_secret"]
+            payload, sig_header, stripe_keys["endpoint_secret"]
         )
-    except ValueError as e:
-        print("ValueError ******")
-        logger.info("ValueError ******")
-        # Invalid payload
+    except ValueError:
+        logger.exception("Invalid payload")
         return jsonify({"error": "Invalid payload"}), 400
-    except stripe.error.SignatureVerificationError as e:
-        print("SignatureVerificationError ******")
-        logger.info("SignatureVerificationError ******")
+    except stripe.error.SignatureVerificationError:
+        logger.exception("Invalid signature")
+        return jsonify({"error": "Invalid signature"}), 400
 
-        # Invalid signature
-        return jsonify({"error": "Invalid payload"}), 400
-
-    object_ = event["data"]["object"]
     event_type = event["type"]
-    stripe_customer_id = object_["customer"]
-    # stripe_subscription_id = object_["subscription"]
-    stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
-    print(stripe_customer_id, stripe_customer_phone)
-    # # Handle the event
-    # if event["type"] in ["payment_intent.succeeded", "invoice.payment_succeeded"]:
-    #     try:
-    #         # id_invoice = object_["invoice"]
-    #         # id_subscription = stripe.Invoice.retrieve(id_invoice)["subscription"]
-    #         id_subscription = object_["id"]
-    #         sub_current_period_end = stripe.Subscription.retrieve(id_subscription)[
-    #             "current_period_end"
-    #         ]
-    #         _ = add_user(stripe_customer_phone, sub_current_period_end)
-    #         send_message(
-    #             """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi nous.
-    #             Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide.""",
-    #             stripe_customer_phone,
-    #         )
-    #     except NoUserPhoneNumber:
-    #         print("[Log] No Phone number provided")
-    #         logger.error(f"User deleted from database: {stripe_customer_phone}")
-    #     except DuplicateUser:
-    #         logger.error(f"Duplicated users creation attempt: {stripe_customer_phone}")
+    object_ = event["data"]["object"]
+    if event_type == "checkout.session.completed":
+        stripe_customer_phone = object_["customer_details"]["phone"]
+    else:
+        stripe_customer_id = object_["customer"]
+        stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
 
     if event_type in [
         "customer.subscription.deleted",
@@ -329,11 +300,15 @@ def webhook():
         if object_["status"] == "active":
             sub_current_period_end = object_["current_period_end"]
             _ = add_user(stripe_customer_phone, sub_current_period_end)
-            send_message(
-                """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi nous.
-                Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide.""",
-                stripe_customer_phone,
-            )
+            send_message(ACTIVATION_MESSAGE, stripe_customer_phone)
+    if event_type == "checkout.session.completed":
+        sub_current_period_end = datetime.datetime.utcnow() + datetime.timedelta(days=7)
+        sub_current_period_end = sub_current_period_end.timestamp()
+        _ = add_user(stripe_customer_phone, sub_current_period_end)
+        send_message(
+            ACTIVATION_MESSAGE,
+            stripe_customer_phone,
+        )
     else:
         logger.warning("Unhandled event type {}".format(event_type))
 
