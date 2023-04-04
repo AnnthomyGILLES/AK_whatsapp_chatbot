@@ -6,7 +6,7 @@ import pymongo
 from dotenv import load_dotenv
 from loguru import logger
 
-ENV = os.getenv("ENV", "DEVELOPMENT")
+ENV = os.getenv("ENV", "PROD")
 
 # Read the configuration file
 config = configparser.ConfigParser()

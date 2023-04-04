@@ -3,7 +3,6 @@ import datetime
 import os
 import re
 import sys
-import time
 
 import openai
 import stripe
@@ -24,7 +23,7 @@ from mongodb_db import (
 from parse_phone_numbers import extract_phone_number
 from utils import count_tokens
 
-ENV = os.getenv("ENV", "DEVELOPMENT")
+ENV = os.getenv("ENV", "PROD")
 config = configparser.ConfigParser()
 config.read("config.ini")
 env_path = config[ENV]["ENV_FILE_PATH"]
