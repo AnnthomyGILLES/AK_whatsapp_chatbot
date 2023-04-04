@@ -15,6 +15,6 @@ EXPOSE 5000
 
 # Define environment variable
 ENV FLASK_APP=chatbot.py
-
+ENV PYTHONUNBUFFERED =1
 # Run app.py when the container launches
 CMD ["python", "chatbot.py"]
