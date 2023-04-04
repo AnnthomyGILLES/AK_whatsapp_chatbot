@@ -3,6 +3,7 @@ import datetime
 import os
 import re
 import sys
+import time
 
 import openai
 import stripe
@@ -29,6 +30,14 @@ config.read("config.ini")
 env_path = config[ENV]["ENV_FILE_PATH"]
 HISTORY_TTL = config.getint(ENV, "HISTORY_TTL")
 load_dotenv(dotenv_path=env_path)
+
+
+logger.remove(0)
+logger.add(
+    sys.stderr,
+    format="{time:HH:mm:ss.SS} | {file} took {elapsed} to execute | {level} | {message} ",
+    colorize=True,
+)
 
 
 app = Flask(__name__)
@@ -117,13 +126,6 @@ EXAMPLE_MESSAGE = """
 🚗 Demander des informations sur les voitures : "Quelle est la meilleure voiture pour les longs trajets ?"
 """
 
-logger.remove(0)
-logger.add(
-    sys.stderr,
-    format="{time:HH:mm:ss.SS} | {file} took {elapsed} to execute | {level} | {message} ",
-    colorize=True,
-)
-
 
 def send_message(body_mess, phone_number):
     """
@@ -207,6 +209,7 @@ def bot():
             "accès illimité pendant 1 mois. Sans engagement.\n",
             phone_number,
         )
+        time.sleep(1)
 
         send_message(
             WHATIA_WEBSITE,
@@ -253,10 +256,10 @@ def webhook():
             payload, sig_header, stripe_keys["endpoint_secret"]
         )
     except ValueError:
-        logger.exception("Invalid payload")
+        logger.error("Invalid payload")
         return jsonify({"error": "Invalid payload"}), 400
     except stripe.error.SignatureVerificationError:
-        logger.exception("Invalid signature")
+        logger.error("Invalid signature")
         return jsonify({"error": "Invalid signature"}), 400
 
     event_type = event["type"]
