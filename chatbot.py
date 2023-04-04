@@ -56,10 +56,13 @@ stripe_keys = {
     "endpoint_secret": os.getenv("STRIPE_ENDPOINT"),
 }
 
-stripe_payment_link = os.getenv("STRIPE_PAYMENT_LINK")
+WHATIA_WEBSITE = os.getenv("WHATIA_WEBSITE")
+
 stripe.api_key = stripe_keys["secret_key"]
 
-app = Flask(__name__)
+ACTIVATION_MESSAGE = """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi 
+nous. Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot 
+intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide."""
 
 # Welcome message
 WELCOME_MESSAGE = """Bonjour et bienvenue sur WhatIA ! 🎉
@@ -200,14 +203,14 @@ def bot():
     if doc is None:
         send_message(WELCOME_MESSAGE, phone_number)
         send_message(
-            "Pour profiter pleinement de toutes mes fonctionnalités et bénéficier d'une expérience optimale,"
-            "je vous invite à vous abonner dès maintenant. C'est 9,90€/mois, vous avez droit à 1 jour d'essai "
-            "satisfait.e ou remboursé.e et c'est sans engagement!\n\n",
+            "Un besoin ponctuel? Profitez du PASS HEBDO. Paiement unique, sans abonnement, accès illimité de 7 "
+            "jours.\n\nNe manquez jamais une réponse intelligente ! Profitez du PASS MENSUEL. Essai gratuit, "
+            "accès illimité pendant 1 mois. Sans engagement.\n",
             phone_number,
         )
-        time.sleep(0.5)
+
         send_message(
-            stripe_payment_link,
+            WHATIA_WEBSITE,
             phone_number,
         )
         return ""
