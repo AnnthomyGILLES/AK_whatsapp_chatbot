@@ -307,8 +307,7 @@ def webhook():
         sub_current_period_end = object_["current_period_end"]
         _ = add_user(stripe_customer_phone, sub_current_period_end)
         send_message(
-            """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi nous.
-            Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide.""",
+            ACTIVATION_MESSAGE,
             stripe_customer_phone,
         )
     elif event_type == "customer.subscription.updated":
@@ -324,8 +323,7 @@ def webhook():
             sub_current_period_end = object_["current_period_end"]
             _ = add_user(stripe_customer_phone, sub_current_period_end)
             send_message(
-                """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi nous.
-                Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide.""",
+                ACTIVATION_MESSAGE,
                 stripe_customer_phone,
             )
         if object_["status"] == "active":
