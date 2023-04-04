@@ -1,12 +1,20 @@
+import configparser
 import datetime
 import os
-from pathlib import Path
 
 import pymongo
 from dotenv import load_dotenv
 from loguru import logger
 
-load_dotenv(dotenv_path=Path(".env"))
+env = "DEVELOPMENT"
+
+# Read the configuration file
+config = configparser.ConfigParser()
+config.read("config.ini")
+env_path = config[env]["ENV_FILE_PATH"]
+database_uri = config[env]["DATABASE_URI"]
+
+load_dotenv(dotenv_path=env_path)
 
 
 class DuplicateUser(Exception):
@@ -22,13 +30,14 @@ MONGODB_USERNAME = os.getenv("MONGODB_USERNAME")
 MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD")
 MONGODB_DATABASE = os.getenv("MONGODB_DATABASE")
 
-# create a MongoDB client and connect to the database
+
 client = pymongo.MongoClient(
-    host=MONGODB_HOSTNAME,
-    port=27017,
-    username=MONGODB_USERNAME,
-    password=MONGODB_PASSWORD,
-    authSource=MONGODB_DATABASE,
+    database_uri.format(
+        MONGODB_USERNAME=MONGODB_USERNAME,
+        MONGODB_PASSWORD=MONGODB_PASSWORD,
+        MONGODB_HOSTNAME=MONGODB_HOSTNAME,
+        MONGODB_DATABASE=MONGODB_DATABASE,
+    )
 )
 db = client["mydatabase"]
 
