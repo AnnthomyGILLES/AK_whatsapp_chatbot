@@ -15,8 +15,6 @@ from twilio.rest import Client
 from chatgpt_api.chatgpt import ask_chat_conversation
 from mongodb_db import (
     add_user,
-    NoUserPhoneNumber,
-    DuplicateUser,
     delete_document,
     update_user_history,
     find_document,
@@ -272,39 +270,69 @@ def webhook():
     object_ = event["data"]["object"]
     event_type = event["type"]
     stripe_customer_id = object_["customer"]
+    # stripe_subscription_id = object_["subscription"]
     stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
     print(stripe_customer_id, stripe_customer_phone)
-    # Handle the event
-    if event["type"] == "payment_intent.succeeded":
-        try:
-            id_invoice = object_["invoice"]
-            id_subscription = stripe.Invoice.retrieve(id_invoice)["subscription"]
-            sub_current_period_end = stripe.Subscription.retrieve(id_subscription)[
-                "current_period_end"
-            ]
+    # # Handle the event
+    # if event["type"] in ["payment_intent.succeeded", "invoice.payment_succeeded"]:
+    #     try:
+    #         # id_invoice = object_["invoice"]
+    #         # id_subscription = stripe.Invoice.retrieve(id_invoice)["subscription"]
+    #         id_subscription = object_["id"]
+    #         sub_current_period_end = stripe.Subscription.retrieve(id_subscription)[
+    #             "current_period_end"
+    #         ]
+    #         _ = add_user(stripe_customer_phone, sub_current_period_end)
+    #         send_message(
+    #             """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi nous.
+    #             Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide.""",
+    #             stripe_customer_phone,
+    #         )
+    #     except NoUserPhoneNumber:
+    #         print("[Log] No Phone number provided")
+    #         logger.error(f"User deleted from database: {stripe_customer_phone}")
+    #     except DuplicateUser:
+    #         logger.error(f"Duplicated users creation attempt: {stripe_customer_phone}")
+
+    if event_type in [
+        "customer.subscription.deleted",
+        "customer.subscription.paused",
+    ]:
+        delete_document({"phone_number": stripe_customer_phone})
+        logger.info(f"User deleted from database: {stripe_customer_phone}")
+    elif event_type == "customer.subscription.created":
+        sub_current_period_end = object_["current_period_end"]
+        _ = add_user(stripe_customer_phone, sub_current_period_end)
+        send_message(
+            """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi nous.
+            Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide.""",
+            stripe_customer_phone,
+        )
+    elif event_type == "customer.subscription.updated":
+        if object_.status in ["canceled", "unpaid"]:
+            if not object_.cancel_at_period_end:
+                delete_document({"phone_number": stripe_customer_phone})
+                logger.info(f"User deleted from database: {stripe_customer_phone}")
+            else:
+                sub_current_period_end = object_["current_period_end"]
+                _ = add_user(stripe_customer_phone, sub_current_period_end)
+            send_message("Votre abonnement a pris fin.", stripe_customer_phone)
+        if object_["status"] == "trialing":
+            sub_current_period_end = object_["current_period_end"]
             _ = add_user(stripe_customer_phone, sub_current_period_end)
             send_message(
                 """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi nous.
                 Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide.""",
                 stripe_customer_phone,
             )
-        except NoUserPhoneNumber:
-            print("[Log] No Phone number provided")
-            logger.error(f"User deleted from database: {stripe_customer_phone}")
-        except DuplicateUser:
-            logger.error(f"Duplicated users creation attempt: {stripe_customer_phone}")
-
-    elif event_type in [
-        "customer.subscription.deleted",
-        "customer.subscription.paused",
-    ]:
-        delete_document({"phone_number": stripe_customer_phone})
-        logger.info(f"User deleted from database: {stripe_customer_phone}")
-    # TODO Handle subscription resume
-    elif event_type == "customer.subscription.updated" and object_.status == "canceled":
-        if not object_.cancel_at_period_end:
-            delete_document({"phone_number": stripe_customer_phone})
-            logger.info(f"User deleted from database: {stripe_customer_phone}")
+        if object_["status"] == "active":
+            sub_current_period_end = object_["current_period_end"]
+            _ = add_user(stripe_customer_phone, sub_current_period_end)
+            send_message(
+                """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi nous.
+                Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide.""",
+                stripe_customer_phone,
+            )
     else:
         logger.warning("Unhandled event type {}".format(event_type))
 

@@ -110,6 +110,7 @@ def add_user(phone_number, current_period_end, history=None):
     if phone_number is None:
         raise NoUserPhoneNumber("Provide a valid phone number.")
     current_period_end = datetime.datetime.utcfromtimestamp(current_period_end)
+    user_id = get_user_id_with_phone_number(phone_number)
     user = {
         "phone_number": phone_number,
         "history": history,
@@ -117,8 +118,15 @@ def add_user(phone_number, current_period_end, history=None):
         "nb_tokens": 0,
     }
     try:
-        result = users.insert_one(user)
-        return result.inserted_id
+        if user_id is None:
+            result = users.insert_one(user)
+            return result.inserted_id
+        else:
+            users.update_one(
+                {"_id": user_id},
+                {"$set": {"current_period_end": current_period_end}},
+            )
+
     except pymongo.errors.DuplicateKeyError:
         raise DuplicateUser(f"Following user already exist: {phone_number}")
 
