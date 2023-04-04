@@ -1,9 +1,9 @@
+import configparser
 import datetime
 import os
 import re
 import sys
 import time
-from pathlib import Path
 
 import openai
 import stripe
@@ -26,9 +26,14 @@ from mongodb_db import (
 from parse_phone_numbers import extract_phone_number
 from utils import count_tokens
 
-HISTORY_TTL = 10
-env_path = Path(".", ".env")
+ENV = "DEVELOPMENT"
+
+config = configparser.ConfigParser()
+config.read("config.ini")
+env_path = config[ENV]["ENV_FILE_PATH"]
+HISTORY_TTL = config.getint(ENV, "HISTORY_TTL")
 load_dotenv(dotenv_path=env_path)
+
 
 app = Flask(__name__)
 
@@ -43,7 +48,7 @@ MAX_TOKEN_LENGTH = os.getenv("MAX_TOKEN_LENGTH", 200)
 # Twilio
 account_sid = os.getenv("TWILIO_ACCOUNT_SID")
 auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-twilio_phone_numer = os.getenv("TWILIO_PHONE_NUMER")
+twilio_phone_numer = os.getenv("TWILIO_PHONE_NUMBER")
 
 client = Client(account_sid, auth_token)
 
@@ -308,11 +313,14 @@ def webhook():
 
 
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        ssl_context=(
-            "/etc/letsencrypt/live/pay.whatia.fr/fullchain.pem",
-            "/etc/letsencrypt/live/pay.whatia.fr/privkey.pem",
-        ),
-    )
+    if ENV == "DEVELOPMENT":
+        app.run(host="0.0.0.0", port=5000)
+    elif ENV == "PROD":
+        app.run(
+            host="0.0.0.0",
+            port=5000,
+            ssl_context=(
+                "/etc/letsencrypt/live/pay.whatia.fr/fullchain.pem",
+                "/etc/letsencrypt/live/pay.whatia.fr/privkey.pem",
+            ),
+        )
