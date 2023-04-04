@@ -11,8 +11,8 @@ ENV = os.getenv("ENV", "DEVELOPMENT")
 # Read the configuration file
 config = configparser.ConfigParser()
 config.read("config.ini")
-env_path = config[env]["ENV_FILE_PATH"]
-database_uri = config[env]["DATABASE_URI"]
+env_path = config[ENV]["ENV_FILE_PATH"]
+database_uri = config[ENV]["DATABASE_URI"]
 
 load_dotenv(dotenv_path=env_path)
 
