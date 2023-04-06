@@ -14,12 +14,7 @@ from twilio.rest import Client
 
 from chatgpt_api.chatgpt import ask_chat_conversation
 from mongodb_db import (
-    add_user,
-    delete_document,
-    update_user_history,
-    find_document,
-    reset_document,
-    increment_nb_tokens,
+    UserCollection,
 )
 from parse_phone_numbers import extract_phone_number
 from utils import count_tokens
@@ -199,7 +194,10 @@ def bot():
     if not incoming_msg:
         return ""
 
-    doc = find_document("phone_number", phone_number)
+    # Initialize the UserCollection with the specified collection name
+    users = UserCollection("users")
+
+    doc = users.find_document("phone_number", phone_number)
 
     if doc is None:
         send_message(WELCOME_MESSAGE, phone_number)
@@ -219,7 +217,7 @@ def bot():
 
     if doc["history"]:
         if doc["history_timestamp"] < oldest_allowed_timestamp:
-            reset_document(doc)
+            users.reset_document(doc)
             message = [
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": incoming_msg},
@@ -228,19 +226,19 @@ def bot():
             message = doc["history"]
             message.append({"role": "user", "content": incoming_msg})
     else:
-        reset_document(doc)
+        users.reset_document(doc)
         message = [
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": incoming_msg},
         ]
     answer = ask_chat_conversation(message)
     nb_tokens += count_tokens(answer)
-    increment_nb_tokens(doc, nb_tokens)
+    users.increment_nb_tokens(doc, nb_tokens)
     answers = split_long_string(answer)
     for answer in answers:
         send_message(answer, phone_number)
     message.append({"role": "assistant", "content": answer})
-    update_user_history(phone_number, message)
+    users.update_user_history(phone_number, message)
 
     return ""
 
@@ -270,15 +268,18 @@ def webhook():
         stripe_customer_id = object_["customer"]
         stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
 
+    # Initialize the UserCollection with the specified collection name
+    users = UserCollection("users")
+
     if event_type in [
         "customer.subscription.deleted",
         "customer.subscription.paused",
     ]:
-        delete_document({"phone_number": stripe_customer_phone})
+        users.delete_document({"phone_number": stripe_customer_phone})
         logger.info(f"User deleted from database: {stripe_customer_phone}")
     elif event_type == "customer.subscription.created":
         sub_current_period_end = object_["current_period_end"]
-        _ = add_user(stripe_customer_phone, sub_current_period_end)
+        _ = users.add_user(stripe_customer_phone, sub_current_period_end)
         send_message(
             ACTIVATION_MESSAGE,
             stripe_customer_phone,
@@ -286,27 +287,27 @@ def webhook():
     elif event_type == "customer.subscription.updated":
         if object_.status in ["canceled", "unpaid"]:
             if not object_.cancel_at_period_end:
-                delete_document({"phone_number": stripe_customer_phone})
+                users.delete_document({"phone_number": stripe_customer_phone})
                 logger.info(f"User deleted from database: {stripe_customer_phone}")
             else:
                 sub_current_period_end = object_["current_period_end"]
-                _ = add_user(stripe_customer_phone, sub_current_period_end)
+                _ = users.add_user(stripe_customer_phone, sub_current_period_end)
             send_message("Votre abonnement a pris fin.", stripe_customer_phone)
         if object_["status"] == "trialing":
             sub_current_period_end = object_["current_period_end"]
-            _ = add_user(stripe_customer_phone, sub_current_period_end)
+            _ = users.add_user(stripe_customer_phone, sub_current_period_end)
             send_message(
                 ACTIVATION_MESSAGE,
                 stripe_customer_phone,
             )
         if object_["status"] == "active":
             sub_current_period_end = object_["current_period_end"]
-            _ = add_user(stripe_customer_phone, sub_current_period_end)
+            _ = users.add_user(stripe_customer_phone, sub_current_period_end)
             send_message(ACTIVATION_MESSAGE, stripe_customer_phone)
     if event_type == "checkout.session.completed":
         sub_current_period_end = datetime.datetime.utcnow() + datetime.timedelta(days=7)
         sub_current_period_end = sub_current_period_end.timestamp()
-        _ = add_user(stripe_customer_phone, sub_current_period_end)
+        _ = users.add_user(stripe_customer_phone, sub_current_period_end)
         send_message(
             ACTIVATION_MESSAGE,
             stripe_customer_phone,
