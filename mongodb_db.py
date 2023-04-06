@@ -1,11 +1,20 @@
+import configparser
 import datetime
-from pathlib import Path
+import os
 
 import pymongo
 from dotenv import load_dotenv
 from loguru import logger
 
-load_dotenv(dotenv_path=Path(".env"))
+ENV = os.getenv("ENV", "PROD")
+
+# Read the configuration file
+config = configparser.ConfigParser()
+config.read("config.ini")
+env_path = config[ENV]["ENV_FILE_PATH"]
+database_uri = config[ENV]["DATABASE_URI"]
+
+load_dotenv(dotenv_path=env_path)
 
 
 class DuplicateUser(Exception):
@@ -21,13 +30,14 @@ MONGODB_USERNAME = os.getenv("MONGODB_USERNAME")
 MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD")
 MONGODB_DATABASE = os.getenv("MONGODB_DATABASE")
 
-# create a MongoDB client and connect to the database
+
 client = pymongo.MongoClient(
-    host=MONGODB_HOSTNAME,
-    port=27017,
-    username=MONGODB_USERNAME,
-    password=MONGODB_PASSWORD,
-    authSource=MONGODB_DATABASE,
+    database_uri.format(
+        MONGODB_USERNAME=MONGODB_USERNAME,
+        MONGODB_PASSWORD=MONGODB_PASSWORD,
+        MONGODB_HOSTNAME=MONGODB_HOSTNAME,
+        MONGODB_DATABASE=MONGODB_DATABASE,
+    )
 )
 db = client["mydatabase"]
 
@@ -100,6 +110,7 @@ def add_user(phone_number, current_period_end, history=None):
     if phone_number is None:
         raise NoUserPhoneNumber("Provide a valid phone number.")
     current_period_end = datetime.datetime.utcfromtimestamp(current_period_end)
+    user_id = get_user_id_with_phone_number(phone_number)
     user = {
         "phone_number": phone_number,
         "history": history,
@@ -107,8 +118,15 @@ def add_user(phone_number, current_period_end, history=None):
         "nb_tokens": 0,
     }
     try:
-        result = users.insert_one(user)
-        return result.inserted_id
+        if user_id is None:
+            result = users.insert_one(user)
+            return result.inserted_id
+        else:
+            users.update_one(
+                {"_id": user_id},
+                {"$set": {"current_period_end": current_period_end}},
+            )
+
     except pymongo.errors.DuplicateKeyError:
         raise DuplicateUser(f"Following user already exist: {phone_number}")
 
@@ -120,9 +138,10 @@ def get_user(user_id):
 # TODO run on a daily basis
 def delete_ended_subsciption():
     # Get today's date and time as a datetime object
-    today_timestamp = datetime.datetime.timestamp(
-        datetime.datetime.today() - datetime.timedelta(hours=24)
-    )
+    # today_timestamp = datetime.datetime.timestamp(
+    #     datetime.datetime.today() - datetime.timedelta(hours=24)
+    # )
+    today_timestamp = datetime.datetime.utcnow().timestamp()
     # Delete documents where the current_period_end field is older than today's date
     result = users.delete_many({"current_period_end": {"$lt": today_timestamp}})
     logger.info(f"Deleted {result.deleted_count} documents.")

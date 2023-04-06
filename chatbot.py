@@ -1,7 +1,8 @@
+import configparser
 import datetime
 import os
 import sys
-from pathlib import Path
+import time
 
 import openai
 import stripe
@@ -14,8 +15,6 @@ from audio.transcription import audio_to_text
 from chatgpt_api.chatgpt import ask_chat_conversation
 from mongodb_db import (
     add_user,
-    NoUserPhoneNumber,
-    DuplicateUser,
     delete_document,
     update_user_history,
     find_document,
@@ -25,9 +24,21 @@ from mongodb_db import (
 from parse_phone_numbers import extract_phone_number
 from utils import count_tokens, split_long_string, get_audio_duration
 
-HISTORY_TTL = 10
-env_path = Path(".", ".env")
+ENV = os.getenv("ENV", "PROD")
+config = configparser.ConfigParser()
+config.read("config.ini")
+env_path = config[ENV]["ENV_FILE_PATH"]
+HISTORY_TTL = config.getint(ENV, "HISTORY_TTL")
 load_dotenv(dotenv_path=env_path)
+
+
+logger.remove(0)
+logger.add(
+    sys.stderr,
+    format="{time:HH:mm:ss.SS} | {file} took {elapsed} to execute | {level} | {message} ",
+    colorize=True,
+)
+
 
 app = Flask(__name__)
 
@@ -37,12 +48,12 @@ app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
 # OpenAI Chat GPT
 openai.api_key = os.getenv("OPENAI_API_KEY")
 completion = openai.Completion()
-MAX_TOKEN_LENGTH = os.getenv("MAX_TOKEN_LENGTH", 500)
+MAX_TOKEN_LENGTH = os.getenv("MAX_TOKEN_LENGTH", 200)
 
 # Twilio
 account_sid = os.getenv("TWILIO_ACCOUNT_SID")
 auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-twilio_phone_numer = os.getenv("TWILIO_PHONE_NUMER")
+twilio_phone_numer = os.getenv("TWILIO_PHONE_NUMBER")
 
 client = Client(account_sid, auth_token)
 
@@ -53,17 +64,19 @@ stripe_keys = {
     "endpoint_secret": os.getenv("STRIPE_ENDPOINT"),
 }
 
-stripe_payment_link = os.getenv("STRIPE_PAYMENT_LINK")
+WHATIA_WEBSITE = os.getenv("WHATIA_WEBSITE")
+
 stripe.api_key = stripe_keys["secret_key"]
 
-
-app = Flask(__name__)
+ACTIVATION_MESSAGE = """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi 
+nous. Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot 
+intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide."""
 
 # Welcome message
 WELCOME_MESSAGE = """Bonjour et bienvenue sur WhatIA ! 🎉
 
 Je suis votre assistant personnel intelligent, prêt à répondre à toutes vos questions et à vous aider avec vos 
-demandes. Propulsé par une puissante Intelligence Artificielle', je peux vous assister de manière précise et 
+demandes. Propulsé par une puissante Intelligence Artificielle, je peux vous assister de manière précise et 
 efficace. Voici quelques exemples de ce que je peux faire pour vous : \n\n
 
 1️⃣ Répondre à des questions générales et complexes \n
@@ -72,10 +85,9 @@ efficace. Voici quelques exemples de ce que je peux faire pour vous : \n\n
 4️⃣ Analyser et résumer des articles \n
 5️⃣ Traduire des phrases ou des textes complets dans plusieurs langues \n
 6️⃣ Répondre à des questions d'entretien \n
-7️⃣ Et bien plus! Tapez la commande "/example" pour avoir une liste d'exemples de ce que vous pouvez demanez \n\n
+7️⃣ Et bien plus! \n\n
 
-Et bien plus encore ! Pour profiter pleinement de toutes mes fonctionnalités et bénéficier d'une expérience optimale, 
-je vous invite à vous abonner dès maintenant. Pour ce faire, veuillez simplement suivre le lien suivant. \n\n
+Et bien plus encore ! \n\n
 
 Si vous avez des questions ou si vous avez besoin d'aide, n'hésitez pas à me le faire savoir. Je suis là pour vous 
 assister 24h/24 et 7j/7. Alors, commençons notre aventure ensemble ! 🚀"""
@@ -113,13 +125,6 @@ EXAMPLE_MESSAGE = """
 🎥 Obtenir des suggestions de films ou de séries : "Quel est le meilleur film à regarder sur Netflix en ce moment ?"
 🚗 Demander des informations sur les voitures : "Quelle est la meilleure voiture pour les longs trajets ?"
 """
-
-logger.remove(0)
-logger.add(
-    sys.stderr,
-    format="{time:HH:mm:ss.SS} | {file} took {elapsed} to execute | {level} | {message} ",
-    colorize=True,
-)
 
 
 def send_message(body_mess, phone_number):
@@ -176,7 +181,18 @@ def bot():
 
     if doc is None:
         send_message(WELCOME_MESSAGE, phone_number)
-        send_message(stripe_payment_link, phone_number)
+        send_message(
+            "Un besoin ponctuel? Profitez du PASS HEBDO. Paiement unique, sans abonnement, accès illimité de 7 "
+            "jours.\n\nNe manquez jamais une réponse intelligente ! Profitez du PASS MENSUEL. Essai gratuit, "
+            "accès illimité pendant 1 mois. Sans engagement.\n",
+            phone_number,
+        )
+        time.sleep(1)
+
+        send_message(
+            WHATIA_WEBSITE,
+            phone_number,
+        )
         return ""
 
     if doc["history"]:
@@ -210,61 +226,69 @@ def bot():
 # TODO Anonymize phone number
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    """
-    Handle Stripe webhook events, including payment success, subscription deletion, and subscription pausing.
-
-    Returns:
-        tuple: A JSON object with the status and an HTTP status code.
-    """
+    payload = request.data.decode("utf-8")
     sig_header = request.headers.get("Stripe-Signature")
 
     try:
         event = stripe.Webhook.construct_event(
-            request.data, sig_header, stripe_keys["endpoint_secret"]
+            payload, sig_header, stripe_keys["endpoint_secret"]
         )
-    except ValueError as e:
-        # Invalid payload
+    except ValueError:
+        logger.error("Invalid payload")
         return jsonify({"error": "Invalid payload"}), 400
-    except stripe.error.SignatureVerificationError as e:
-        # Invalid signature
-        return jsonify({"error": "Invalid payload"}), 400
+    except stripe.error.SignatureVerificationError:
+        logger.error("Invalid signature")
+        return jsonify({"error": "Invalid signature"}), 400
 
-    object_ = event["data"]["object"]
     event_type = event["type"]
-    stripe_customer_id = object_["customer"]
-    stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
-    print(stripe_customer_id, stripe_customer_phone)
-    # Handle the event
-    if event["type"] == "payment_intent.succeeded":
-        try:
-            id_invoice = object_["invoice"]
-            id_subscription = stripe.Invoice.retrieve(id_invoice)["subscription"]
-            sub_current_period_end = stripe.Subscription.retrieve(id_subscription)[
-                "current_period_end"
-            ]
-            _ = add_user(stripe_customer_phone, sub_current_period_end)
-            send_message(
-                """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi nous.
-                Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide.""",
-                stripe_customer_phone,
-            )
-        except NoUserPhoneNumber:
-            print("[Log] No Phone number provided")
-            logger.error(f"User deleted from database: {stripe_customer_phone}")
-        except DuplicateUser:
-            logger.error(f"Duplicated users creation attempt: {stripe_customer_phone}")
+    object_ = event["data"]["object"]
+    if event_type == "checkout.session.completed":
+        stripe_customer_phone = object_["customer_details"]["phone"]
+    else:
+        stripe_customer_id = object_["customer"]
+        stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
 
-    elif event_type in [
+    if event_type in [
         "customer.subscription.deleted",
         "customer.subscription.paused",
     ]:
         delete_document({"phone_number": stripe_customer_phone})
         logger.info(f"User deleted from database: {stripe_customer_phone}")
-    # TODO Handle subscription resume
-    elif event_type == "customer.subscription.updated" and object_.status == "canceled":
-        if not object_.cancel_at_period_end:
-            delete_document({"phone_number": stripe_customer_phone})
-            logger.info(f"User deleted from database: {stripe_customer_phone}")
+    elif event_type == "customer.subscription.created":
+        sub_current_period_end = object_["current_period_end"]
+        _ = add_user(stripe_customer_phone, sub_current_period_end)
+        send_message(
+            ACTIVATION_MESSAGE,
+            stripe_customer_phone,
+        )
+    elif event_type == "customer.subscription.updated":
+        if object_.status in ["canceled", "unpaid"]:
+            if not object_.cancel_at_period_end:
+                delete_document({"phone_number": stripe_customer_phone})
+                logger.info(f"User deleted from database: {stripe_customer_phone}")
+            else:
+                sub_current_period_end = object_["current_period_end"]
+                _ = add_user(stripe_customer_phone, sub_current_period_end)
+            send_message("Votre abonnement a pris fin.", stripe_customer_phone)
+        if object_["status"] == "trialing":
+            sub_current_period_end = object_["current_period_end"]
+            _ = add_user(stripe_customer_phone, sub_current_period_end)
+            send_message(
+                ACTIVATION_MESSAGE,
+                stripe_customer_phone,
+            )
+        if object_["status"] == "active":
+            sub_current_period_end = object_["current_period_end"]
+            _ = add_user(stripe_customer_phone, sub_current_period_end)
+            send_message(ACTIVATION_MESSAGE, stripe_customer_phone)
+    if event_type == "checkout.session.completed":
+        sub_current_period_end = datetime.datetime.utcnow() + datetime.timedelta(days=7)
+        sub_current_period_end = sub_current_period_end.timestamp()
+        _ = add_user(stripe_customer_phone, sub_current_period_end)
+        send_message(
+            ACTIVATION_MESSAGE,
+            stripe_customer_phone,
+        )
     else:
         logger.warning("Unhandled event type {}".format(event_type))
 
@@ -272,4 +296,14 @@ def webhook():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    if ENV == "DEVELOPMENT":
+        app.run(host="0.0.0.0", port=5000)
+    elif ENV == "PROD":
+        app.run(
+            host="0.0.0.0",
+            port=5000,
+            ssl_context=(
+                "/etc/letsencrypt/live/pay.whatia.fr/fullchain.pem",
+                "/etc/letsencrypt/live/pay.whatia.fr/privkey.pem",
+            ),
+        )
