@@ -3,7 +3,6 @@ import datetime
 import os
 import re
 import sys
-import time
 
 import openai
 import stripe
@@ -24,6 +23,8 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 env_path = config[ENV]["ENV_FILE_PATH"]
 HISTORY_TTL = config.getint(ENV, "HISTORY_TTL")
+FREE_TRIAL_LIMIT = config.getint(ENV, "FREE_TRIAL_LIMIT")
+
 load_dotenv(dotenv_path=env_path)
 
 
@@ -200,20 +201,36 @@ def bot():
     doc = users.find_document("phone_number", phone_number)
 
     if doc is None:
-        send_message(WELCOME_MESSAGE, phone_number)
-        send_message(
-            "Un besoin ponctuel? Profitez du PASS HEBDO. Paiement unique, sans abonnement, accès illimité de 7 "
-            "jours.\n\nNe manquez jamais une réponse intelligente ! Profitez du PASS MENSUEL. Essai gratuit, "
-            "accès illimité pendant 1 mois. Sans engagement.\n",
-            phone_number,
-        )
-        time.sleep(1)
+        users = UserCollection("freemiums")
 
-        send_message(
-            WHATIA_WEBSITE,
-            phone_number,
-        )
-        return ""
+        doc = users.find_document("phone_number", phone_number)
+
+        if doc is None:
+            doc_id = users.add_user(phone_number, freemium=True)
+            doc = users.collection.find_one(doc_id)
+        else:
+            if doc["is_blocked"]:
+                send_message(
+                    f"Vous avez atteint votre limite d'essai gratuit de {FREE_TRIAL_LIMIT} messages. Pour "
+                    "continuer à utiliser WhatIA, vous devriez envisager de souscrire à l'une de nos offres, "
+                    "telles que le PASS HEBDO pour un besoin ponctuel avec un paiement unique, ou le PASS "
+                    "MENSUEL pour un accès illimité pendant 1 mois sans engagement et annulable à tout moment",
+                    phone_number,
+                )
+
+                send_message(
+                    WHATIA_WEBSITE,
+                    phone_number,
+                )
+                return ""
+
+            if doc["nb_messages"] >= FREE_TRIAL_LIMIT:
+                users.collection.update_one(
+                    {"_id": doc["_id"]},
+                    {"$set": {"is_blocked": True}},
+                )
+
+            users.increment_nb_messages(doc)
 
     if doc["history"]:
         if doc["history_timestamp"] < oldest_allowed_timestamp:

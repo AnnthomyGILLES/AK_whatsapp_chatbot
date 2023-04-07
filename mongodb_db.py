@@ -65,6 +65,12 @@ class UserCollection:
         # increment the field by the specified amount for the specified document
         self.collection.update_one({"_id": doc["_id"]}, {"$inc": {"nb_tokens": amount}})
 
+    def increment_nb_messages(self, doc, amount=1):
+        # increment the field by the specified amount for the specified document
+        self.collection.update_one(
+            {"_id": doc["_id"]}, {"$inc": {"nb_messages": amount}}
+        )
+
     def reset_tokens(self):
         # get today's date
         today_timestamp = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
@@ -93,13 +99,16 @@ class UserCollection:
         if doc:
             return doc["_id"]
 
-    def add_user(self, phone_number, current_period_end, history=None):
+    def add_user(
+        self, phone_number, current_period_end=None, history=None, freemium=False
+    ):
         if history is None:
             history = []
 
         if phone_number is None:
             raise NoUserPhoneNumber("Provide a valid phone number.")
-        current_period_end = datetime.datetime.utcfromtimestamp(current_period_end)
+        if current_period_end is not None:
+            current_period_end = datetime.datetime.utcfromtimestamp(current_period_end)
         user_id = self.get_user_id_with_phone_number(phone_number)
         user = {
             "phone_number": phone_number,
@@ -107,6 +116,9 @@ class UserCollection:
             "current_period_end": current_period_end,
             "nb_tokens": 0,
         }
+        if freemium:
+            user["nb_messages"] = 0
+            user["is_blocked"] = False
 
         try:
             if user_id is None:
