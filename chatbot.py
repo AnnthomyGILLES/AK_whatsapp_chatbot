@@ -233,7 +233,9 @@ def bot():
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": incoming_msg},
         ]
-    answer = ask_chat_conversation(message)
+
+    # Call ask_chat_conversation asynchronously
+    answer = await ask_chat_conversation(message)
     nb_tokens += count_tokens(answer)
     increment_nb_tokens(doc, nb_tokens)
     answers = split_long_string(answer)
