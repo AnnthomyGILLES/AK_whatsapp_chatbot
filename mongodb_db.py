@@ -62,14 +62,10 @@ class UserCollection:
         else:
             logger.info("No matching document found.")
 
-    def increment_nb_tokens(self, doc, amount):
-        # increment the field by the specified amount for the specified document
-        self.collection.update_one({"_id": doc["_id"]}, {"$inc": {"nb_tokens": amount}})
-
-    def increment_nb_messages(self, doc, amount=1):
+    def increment_nb_tokens_messages(self, doc, amount):
         # increment the field by the specified amount for the specified document
         self.collection.update_one(
-            {"_id": doc["_id"]}, {"$inc": {"nb_messages": amount}}
+            {"_id": doc["_id"]}, {"$inc": {"nb_tokens": amount, "nb_messages": 1}}
         )
 
     def reset_tokens(self):
@@ -128,7 +124,7 @@ class UserCollection:
             else:
                 self.collection.update_one(
                     {"_id": user_id},
-                    {"$set": {"current_period_end": current_period_end}},
+                    {"$set": user},
                 )
 
         except pymongo.errors.DuplicateKeyError:
