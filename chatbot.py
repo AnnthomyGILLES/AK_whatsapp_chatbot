@@ -8,13 +8,12 @@ import openai
 import stripe
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+from flask_caching import Cache
 from loguru import logger
 from twilio.rest import Client
 
 from chatgpt_api.chatgpt import ask_chat_conversation
-from mongodb_db import (
-    UserCollection,
-)
+from mongodb_db import UserCollection
 from parse_phone_numbers import extract_phone_number
 from utils import count_tokens
 
@@ -40,6 +39,8 @@ app = Flask(__name__)
 
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "top-secret!")
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
+
+cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
 # OpenAI Chat GPT
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -179,6 +180,7 @@ def bot():
     Returns:
         str: An empty string (required for Twilio to work correctly).
     """
+    collection_name = "users"
     current_time = datetime.datetime.utcnow()
     oldest_allowed_timestamp = current_time - datetime.timedelta(minutes=HISTORY_TTL)
     incoming_msg = request.values["Body"].lower().strip()
@@ -195,14 +197,12 @@ def bot():
     if not incoming_msg:
         return ""
 
-    # Initialize the UserCollection with the specified collection name
-    users = UserCollection("users")
-
-    doc = users.find_document("phone_number", phone_number)
+    # Check cache for user document
+    doc = cache.get(phone_number)
+    users = UserCollection(collection_name)
 
     if doc is None:
-        users = UserCollection("freemiums")
-
+        # If not in cache, get from database and add to cache
         doc = users.find_document("phone_number", phone_number)
 
         if doc is None:
@@ -232,15 +232,15 @@ def bot():
 
             users.increment_nb_messages(doc)
 
-    if doc["history"]:
-        if doc["history_timestamp"] < oldest_allowed_timestamp:
+    if doc.get("history"):
+        if doc.get("history_timestamp") < oldest_allowed_timestamp:
             users.reset_document(doc)
             message = [
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": incoming_msg},
             ]
         else:
-            message = doc["history"]
+            message = doc.get("history")
             message.append({"role": "user", "content": incoming_msg})
     else:
         users.reset_document(doc)
@@ -255,7 +255,8 @@ def bot():
     for answer in answers:
         send_message(answer, phone_number)
     message.append({"role": "assistant", "content": answer})
-    users.update_user_history(phone_number, message)
+    doc = users.update_user_history(phone_number, message)
+    cache.set(phone_number, doc, timeout=60)
 
     return ""
 

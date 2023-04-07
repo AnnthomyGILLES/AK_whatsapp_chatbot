@@ -83,7 +83,10 @@ class UserCollection:
     def update_user_history(self, phone_number, message=None):
         query = {"phone_number": phone_number}
         update = {"$set": {"history": message}}
-        _ = self.collection.find_one_and_update(query, update, upsert=True)
+        document = self.collection.find_one_and_update(
+            query, update, upsert=True, return_document=ReturnDocument.AFTER
+        )
+        return document
 
     def find_document(self, field_name, field_value):
         # search for a document with a specific field value
@@ -115,10 +118,9 @@ class UserCollection:
             "history": history,
             "current_period_end": current_period_end,
             "nb_tokens": 0,
+            "nb_messages": 0,
+            "is_blocked": False,
         }
-        if freemium:
-            user["nb_messages"] = 0
-            user["is_blocked"] = False
 
         try:
             if user_id is None:
