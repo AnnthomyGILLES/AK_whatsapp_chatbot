@@ -69,7 +69,6 @@ ACTIVATION_MESSAGE = """Bienvenue dans le club d'utilisateurs privé de WhatIA !
 nous. Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot 
 intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide."""
 
-# Welcome message
 WELCOME_MESSAGE = """Bonjour et bienvenue sur WhatIA ! 🎉
 
 Je suis votre assistant personnel intelligent, prêt à répondre à toutes vos questions et à vous aider avec vos 
@@ -208,29 +207,20 @@ async def bot():
         if doc is None:
             doc_id = users.add_user(phone_number)
             doc = users.collection.find_one(doc_id)
-        else:
-            if doc["is_blocked"]:
-                send_message(
-                    f"Vous avez atteint votre limite d'essai gratuit de {FREE_TRIAL_LIMIT} messages. Pour "
-                    "continuer à utiliser WhatIA, vous devriez envisager de souscrire à l'une de nos offres, "
-                    "telles que le PASS HEBDO pour un besoin ponctuel avec un paiement unique, ou le PASS "
-                    "MENSUEL pour un accès illimité pendant 1 mois sans engagement et annulable à tout moment",
-                    phone_number,
-                )
 
-                send_message(
-                    WHATIA_WEBSITE,
-                    phone_number,
-                )
-                return ""
+    if doc.get("nb_messages") >= FREE_TRIAL_LIMIT:
+        users.collection.update_one(
+            {"_id": doc["_id"]},
+            {"$set": {"is_blocked": True}},
+        )
 
-            if doc["nb_messages"] >= FREE_TRIAL_LIMIT:
-                users.collection.update_one(
-                    {"_id": doc["_id"]},
-                    {"$set": {"is_blocked": True}},
-                )
-
-            users.increment_nb_messages(doc)
+    if doc["is_blocked"]:
+        send_message(
+            f"Vous avez atteint votre limite d'essai gratuit de {FREE_TRIAL_LIMIT} messages. Pour "
+            f"continuer à utiliser WhatIA, vous devriez souscrire à l'une de nos offres: \n {WHATIA_WEBSITE}",
+            phone_number,
+        )
+        return ""
 
     if doc.get("history"):
         if doc.get("history_timestamp") < oldest_allowed_timestamp:
@@ -249,14 +239,13 @@ async def bot():
             {"role": "user", "content": incoming_msg},
         ]
 
-    # Call ask_chat_conversation asynchronously
     answer = await ask_chat_conversation(message)
     nb_tokens += count_tokens(answer)
-    users.increment_nb_tokens(doc, nb_tokens)
     answers = split_long_string(answer)
     for answer in answers:
         send_message(answer, phone_number)
     message.append({"role": "assistant", "content": answer})
+    users.increment_nb_tokens_messages(doc, nb_tokens)
     doc = users.update_user_history(phone_number, message)
     cache.set(phone_number, doc, timeout=60)
 
