@@ -172,7 +172,7 @@ def split_long_string(text, max_len=1200):
 
 
 @app.route("/bot", methods=["POST"])
-def bot():
+async def bot():
     """
     Handle incoming messages from users, process them, and send responses.
     This function is designed to be used as an endpoint for a webhook.
@@ -206,7 +206,7 @@ def bot():
         doc = users.find_document("phone_number", phone_number)
 
         if doc is None:
-            doc_id = users.add_user(phone_number, freemium=True)
+            doc_id = users.add_user(phone_number)
             doc = users.collection.find_one(doc_id)
         else:
             if doc["is_blocked"]:
@@ -248,7 +248,9 @@ def bot():
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": incoming_msg},
         ]
-    answer = ask_chat_conversation(message)
+
+    # Call ask_chat_conversation asynchronously
+    answer = await ask_chat_conversation(message)
     nb_tokens += count_tokens(answer)
     users.increment_nb_tokens(doc, nb_tokens)
     answers = split_long_string(answer)
