@@ -2,25 +2,18 @@ import configparser
 import datetime
 import os
 import sys
-import time
 
 import openai
 import stripe
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
+from flask_caching import Cache
 from loguru import logger
 from twilio.rest import Client
 
 from audio.transcription import audio_to_text
 from chatgpt_api.chatgpt import ask_chat_conversation
-from mongodb_db import (
-    add_user,
-    delete_document,
-    update_user_history,
-    find_document,
-    reset_document,
-    increment_nb_tokens,
-)
+from mongodb_db import UserCollection
 from parse_phone_numbers import extract_phone_number
 from utils import count_tokens, split_long_string, get_audio_duration
 
@@ -29,6 +22,8 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 env_path = config[ENV]["ENV_FILE_PATH"]
 HISTORY_TTL = config.getint(ENV, "HISTORY_TTL")
+FREE_TRIAL_LIMIT = config.getint(ENV, "FREE_TRIAL_LIMIT")
+
 load_dotenv(dotenv_path=env_path)
 
 
@@ -44,6 +39,8 @@ app = Flask(__name__)
 
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "top-secret!")
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
+
+cache = Cache(app, config={"CACHE_TYPE": "simple"})
 
 # OpenAI Chat GPT
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -144,7 +141,7 @@ def send_message(body_mess, phone_number):
 
 
 @app.route("/bot", methods=["POST"])
-def bot():
+async def bot():
     """
     Handle incoming messages from users, process them, and send responses.
     This function is designed to be used as an endpoint for a webhook.
@@ -152,6 +149,7 @@ def bot():
     Returns:
         str: An empty string (required for Twilio to work correctly).
     """
+    collection_name = "users"
     current_time = datetime.datetime.utcnow()
     oldest_allowed_timestamp = current_time - datetime.timedelta(minutes=HISTORY_TTL)
     incoming_msg = request.values["Body"].lower().strip()
@@ -177,48 +175,68 @@ def bot():
     if not incoming_msg:
         return ""
 
-    doc = find_document("phone_number", phone_number)
+    # Check cache for user document
+    doc = cache.get(phone_number)
+    users = UserCollection(collection_name)
 
     if doc is None:
-        send_message(WELCOME_MESSAGE, phone_number)
-        send_message(
-            "Un besoin ponctuel? Profitez du PASS HEBDO. Paiement unique, sans abonnement, accès illimité de 7 "
-            "jours.\n\nNe manquez jamais une réponse intelligente ! Profitez du PASS MENSUEL. Essai gratuit, "
-            "accès illimité pendant 1 mois. Sans engagement.\n",
-            phone_number,
-        )
-        time.sleep(1)
+        # If not in cache, get from database and add to cache
+        doc = users.find_document("phone_number", phone_number)
 
-        send_message(
-            WHATIA_WEBSITE,
-            phone_number,
-        )
-        return ""
+        if doc is None:
+            doc_id = users.add_user(phone_number)
+            doc = users.collection.find_one(doc_id)
+        else:
+            if doc["is_blocked"]:
+                send_message(
+                    f"Vous avez atteint votre limite d'essai gratuit de {FREE_TRIAL_LIMIT} messages. Pour "
+                    "continuer à utiliser WhatIA, vous devriez envisager de souscrire à l'une de nos offres, "
+                    "telles que le PASS HEBDO pour un besoin ponctuel avec un paiement unique, ou le PASS "
+                    "MENSUEL pour un accès illimité pendant 1 mois sans engagement et annulable à tout moment",
+                    phone_number,
+                )
 
-    if doc["history"]:
-        if doc["history_timestamp"] < oldest_allowed_timestamp:
-            reset_document(doc)
+                send_message(
+                    WHATIA_WEBSITE,
+                    phone_number,
+                )
+                return ""
+
+            if doc["nb_messages"] >= FREE_TRIAL_LIMIT:
+                users.collection.update_one(
+                    {"_id": doc["_id"]},
+                    {"$set": {"is_blocked": True}},
+                )
+
+            users.increment_nb_messages(doc)
+
+    if doc.get("history"):
+        if doc.get("history_timestamp") < oldest_allowed_timestamp:
+            users.reset_document(doc)
             message = [
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": incoming_msg},
             ]
         else:
-            message = doc["history"]
+            message = doc.get("history")
             message.append({"role": "user", "content": incoming_msg})
     else:
-        reset_document(doc)
+        users.reset_document(doc)
         message = [
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": incoming_msg},
         ]
-    answer = ask_chat_conversation(message)
+
+    # Call ask_chat_conversation asynchronously
+    answer = await ask_chat_conversation(message)
     nb_tokens += count_tokens(answer)
-    increment_nb_tokens(doc, nb_tokens)
+    users.increment_nb_tokens(doc, nb_tokens)
     answers = split_long_string(answer)
     for answer in answers:
         send_message(answer, phone_number)
     message.append({"role": "assistant", "content": answer})
-    update_user_history(phone_number, message)
+    doc = users.update_user_history(phone_number, message)
+    cache.set(phone_number, doc, timeout=60)
 
     return ""
 
@@ -248,15 +266,18 @@ def webhook():
         stripe_customer_id = object_["customer"]
         stripe_customer_phone = stripe.Customer.retrieve(stripe_customer_id)["phone"]
 
+    # Initialize the UserCollection with the specified collection name
+    users = UserCollection("users")
+
     if event_type in [
         "customer.subscription.deleted",
         "customer.subscription.paused",
     ]:
-        delete_document({"phone_number": stripe_customer_phone})
+        users.delete_document({"phone_number": stripe_customer_phone})
         logger.info(f"User deleted from database: {stripe_customer_phone}")
     elif event_type == "customer.subscription.created":
         sub_current_period_end = object_["current_period_end"]
-        _ = add_user(stripe_customer_phone, sub_current_period_end)
+        _ = users.add_user(stripe_customer_phone, sub_current_period_end)
         send_message(
             ACTIVATION_MESSAGE,
             stripe_customer_phone,
@@ -264,27 +285,27 @@ def webhook():
     elif event_type == "customer.subscription.updated":
         if object_.status in ["canceled", "unpaid"]:
             if not object_.cancel_at_period_end:
-                delete_document({"phone_number": stripe_customer_phone})
+                users.delete_document({"phone_number": stripe_customer_phone})
                 logger.info(f"User deleted from database: {stripe_customer_phone}")
             else:
                 sub_current_period_end = object_["current_period_end"]
-                _ = add_user(stripe_customer_phone, sub_current_period_end)
+                _ = users.add_user(stripe_customer_phone, sub_current_period_end)
             send_message("Votre abonnement a pris fin.", stripe_customer_phone)
         if object_["status"] == "trialing":
             sub_current_period_end = object_["current_period_end"]
-            _ = add_user(stripe_customer_phone, sub_current_period_end)
+            _ = users.add_user(stripe_customer_phone, sub_current_period_end)
             send_message(
                 ACTIVATION_MESSAGE,
                 stripe_customer_phone,
             )
         if object_["status"] == "active":
             sub_current_period_end = object_["current_period_end"]
-            _ = add_user(stripe_customer_phone, sub_current_period_end)
+            _ = users.add_user(stripe_customer_phone, sub_current_period_end)
             send_message(ACTIVATION_MESSAGE, stripe_customer_phone)
     if event_type == "checkout.session.completed":
         sub_current_period_end = datetime.datetime.utcnow() + datetime.timedelta(days=7)
         sub_current_period_end = sub_current_period_end.timestamp()
-        _ = add_user(stripe_customer_phone, sub_current_period_end)
+        _ = users.add_user(stripe_customer_phone, sub_current_period_end)
         send_message(
             ACTIVATION_MESSAGE,
             stripe_customer_phone,
