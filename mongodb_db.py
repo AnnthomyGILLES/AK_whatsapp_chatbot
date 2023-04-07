@@ -5,6 +5,7 @@ import os
 import pymongo
 from dotenv import load_dotenv
 from loguru import logger
+from pymongo import ReturnDocument
 
 ENV = os.getenv("ENV", "PROD")
 
@@ -102,9 +103,7 @@ class UserCollection:
         if doc:
             return doc["_id"]
 
-    def add_user(
-        self, phone_number, current_period_end=None, history=None, freemium=False
-    ):
+    def add_user(self, phone_number, current_period_end=None, history=None):
         if history is None:
             history = []
 
