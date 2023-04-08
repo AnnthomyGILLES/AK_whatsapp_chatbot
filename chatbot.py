@@ -208,7 +208,10 @@ async def bot():
             doc_id = users.add_user(phone_number)
             doc = users.collection.find_one(doc_id)
 
-    if doc.get("nb_messages") >= FREE_TRIAL_LIMIT:
+    if (
+        doc.get("nb_messages") >= FREE_TRIAL_LIMIT
+        and doc.get("current_period_end") is None
+    ):
         users.collection.update_one(
             {"_id": doc["_id"]},
             {"$set": {"is_blocked": True}},
