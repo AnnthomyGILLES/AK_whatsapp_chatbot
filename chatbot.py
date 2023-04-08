@@ -17,7 +17,7 @@ from mongodb_db import UserCollection
 from parse_phone_numbers import extract_phone_number
 from utils import count_tokens
 
-ENV = os.getenv("ENV", "PROD")
+ENV = os.getenv("ENV_WHATIA", "PROD")
 config = configparser.ConfigParser()
 config.read("config.ini")
 env_path = config[ENV]["ENV_FILE_PATH"]
