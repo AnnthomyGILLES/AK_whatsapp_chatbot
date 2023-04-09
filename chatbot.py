@@ -317,7 +317,16 @@ def webhook():
             _ = users.add_user(stripe_customer_phone, sub_current_period_end)
             send_message(ACTIVATION_MESSAGE, stripe_customer_phone)
     elif event_type == "checkout.session.completed":
-        sub_current_period_end = datetime.datetime.utcnow() + datetime.timedelta(days=7)
+        # Pass 7 jours
+        if object_["amount_subtotal"] == 490:
+            sub_current_period_end = datetime.datetime.utcnow() + datetime.timedelta(
+                days=7
+            )
+        #     Pass 30 jours
+        elif object_["amount_subtotal"] == 990:
+            sub_current_period_end = datetime.datetime.utcnow() + datetime.timedelta(
+                days=30
+            )
         sub_current_period_end = sub_current_period_end.timestamp()
         _ = users.add_user(stripe_customer_phone, sub_current_period_end)
         send_message(
