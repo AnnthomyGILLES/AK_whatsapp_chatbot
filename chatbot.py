@@ -229,8 +229,11 @@ async def bot():
         if doc.get("history_timestamp") < oldest_allowed_timestamp:
             users.reset_document(doc)
             message = [
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant talking either in french, spanish, italian, english or more depending on the language used to talk to you.",
+                },
                 {"role": "user", "content": incoming_msg},
-                {"role": "system", "content": "You are a helpful assistant."},
             ]
         else:
             message = doc.get("history")
@@ -238,8 +241,11 @@ async def bot():
     else:
         users.reset_document(doc)
         message = [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant talking either in french, spanish, italian, english or more depending on the language used to talk to you.",
+            },
             {"role": "user", "content": incoming_msg},
-            {"role": "system", "content": "You are a helpful assistant."},
         ]
 
     answer = await ask_chat_conversation(message)
