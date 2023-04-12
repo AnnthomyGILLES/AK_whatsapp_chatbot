@@ -1,6 +1,7 @@
 import configparser
 import datetime
 import os
+from pathlib import Path
 
 import pymongo
 from dotenv import load_dotenv
@@ -11,8 +12,9 @@ ENV = os.getenv("ENV_WHATIA", "PROD")
 
 # Read the configuration file
 config = configparser.ConfigParser()
-config.read("config.ini")
-env_path = config[ENV]["ENV_FILE_PATH"]
+config_file_path = Path(__file__).resolve().parent / "config.ini"
+config.read(config_file_path)
+env_path = Path(__file__).resolve().parent / config[ENV]["ENV_FILE_PATH"]
 database_uri = config[ENV]["DATABASE_URI"]
 
 load_dotenv(dotenv_path=env_path)
