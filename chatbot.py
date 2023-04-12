@@ -139,13 +139,13 @@ def send_message(body_mess, phone_number):
     print(message.sid)
 
 
-def split_long_string(text, max_len=1200):
+def split_long_string(text, max_len=1599):
     """
     Split a long string into a list of strings of maximum length `max_len`.
 
-    Args:
+    Args:0
         text (str): The input text to be split.
-        max_len (int, optional): The maximum length of each chunk. Defaults to 1200.
+        max_len (int, optional): The maximum length of each chunk. Defaults to 1599.
 
     Returns:
         list[str]: A list of strings, each with a length not exceeding `max_len`.
