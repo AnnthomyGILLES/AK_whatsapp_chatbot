@@ -146,6 +146,9 @@ class UserCollection:
         )
         logger.info(f"Deleted {result.deleted_count} documents.")
 
+    def list_all_users(self):
+        return list(self.collection.find({}))
+
 
 if __name__ == "__main__":
     # Initialize the UserCollection with the specified collection name
