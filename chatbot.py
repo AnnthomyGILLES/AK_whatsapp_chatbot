@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_caching import Cache
 from loguru import logger
-from twilio.rest import Client
 
 from chatgpt_api.chatgpt import ask_chat_conversation
 from mongodb_db import UserCollection
@@ -41,19 +40,12 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "top-secret!")
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
 
-cache = Cache(app, config={"CACHE_TYPE": "simple"})
+cache = Cache(app, config={"CACHE_TYPE": "simple", "CACHE_DEFAULT_TIMEOUT": 60})
 
 # OpenAI Chat GPT
 openai.api_key = os.getenv("OPENAI_API_KEY")
 completion = openai.Completion()
 MAX_TOKEN_LENGTH = os.getenv("MAX_TOKEN_LENGTH", 200)
-
-# Twilio
-account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-twilio_phone_numer = os.getenv("TWILIO_PHONE_NUMBER")
-
-client = Client(account_sid, auth_token)
 
 # Stripe
 stripe_keys = {
@@ -165,8 +157,6 @@ async def bot():
         str: An empty string (required for Twilio to work correctly).
     """
     collection_name = "users"
-    current_time = datetime.datetime.utcnow()
-    oldest_allowed_timestamp = current_time - datetime.timedelta(minutes=HISTORY_TTL)
     incoming_msg = request.values["Body"].lower().strip()
     media_url = request.form.get("MediaUrl0")
     phone_number = extract_phone_number(request.values["From"].lower())
@@ -202,6 +192,14 @@ async def bot():
             {"$set": {"is_blocked": True}},
         )
 
+    message = [
+        {
+            "role": "system",
+            "content": "You are a helpful assistant talking either in french, spanish, italian, english or more "
+            "depending on the language used to talk to you.",
+        },
+    ]
+
     if doc["is_blocked"]:
         send_message(
             f"Vous avez atteint votre limite d'essai gratuit de {FREE_TRIAL_LIMIT} messages. Pour "
@@ -209,39 +207,23 @@ async def bot():
             phone_number,
         )
         return ""
-
+    historical_messages = []
     if doc.get("history"):
-        if doc.get("history_timestamp") < oldest_allowed_timestamp:
-            users.reset_document(doc)
-            message = [
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant talking either in french, spanish, italian, english or more depending on the language used to talk to you.",
-                },
-                {"role": "user", "content": incoming_msg},
-            ]
-        else:
-            message = doc.get("history")
-            message.append({"role": "user", "content": incoming_msg})
-    else:
-        users.reset_document(doc)
-        message = [
-            {
-                "role": "system",
-                "content": "You are a helpful assistant talking either in french, spanish, italian, english or more depending on the language used to talk to you.",
-            },
-            {"role": "user", "content": incoming_msg},
-        ]
+        historical_messages = doc.get("history")
 
-    answer = await ask_chat_conversation(message)
+    historical_messages.append({"role": "user", "content": incoming_msg})
+
+    answer = await ask_chat_conversation(message + historical_messages)
     nb_tokens += count_tokens(answer)
     answers = split_long_string(answer)
     for answer in answers:
         send_message(answer, phone_number)
-    message.append({"role": "assistant", "content": answer})
+    if len(historical_messages) > 4:
+        del historical_messages[:2]
+    historical_messages.append({"role": "assistant", "content": answer})
     users.increment_nb_tokens_messages(doc, nb_tokens)
-    doc = users.update_user_history(phone_number, message)
-    cache.set(phone_number, doc, timeout=60)
+    doc = users.update_user_history(phone_number, historical_messages)
+    cache.set(phone_number, doc)
 
     return ""
 

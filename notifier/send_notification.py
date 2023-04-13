@@ -31,12 +31,12 @@ def send_message(body_mess, phone_number):
         body_mess (str): The content of the message to send.
         phone_number (str): The recipient's phone number.
     """
-    message = client.messages.create(
+    response = client.messages.create(
         from_=f"whatsapp:{twilio_phone_numer}",
         body=body_mess,
         to=f"whatsapp:{phone_number}",
     )
-    print(message.sid)
+    print(response.sid)
 
 
 if __name__ == "__main__":
