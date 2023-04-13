@@ -14,6 +14,7 @@ from twilio.rest import Client
 
 from chatgpt_api.chatgpt import ask_chat_conversation
 from mongodb_db import UserCollection
+from notifier.send_notification import send_message
 from parse_phone_numbers import extract_phone_number
 from utils import count_tokens
 
@@ -121,22 +122,6 @@ EXAMPLE_MESSAGE = """
 🎥 Obtenir des suggestions de films ou de séries : "Quel est le meilleur film à regarder sur Netflix en ce moment ?"
 🚗 Demander des informations sur les voitures : "Quelle est la meilleure voiture pour les longs trajets ?"
 """
-
-
-def send_message(body_mess, phone_number):
-    """
-    Send a WhatsApp message to the specified phone number using Twilio.
-
-    Args:
-        body_mess (str): The content of the message to send.
-        phone_number (str): The recipient's phone number.
-    """
-    message = client.messages.create(
-        from_=f"whatsapp:{twilio_phone_numer}",
-        body=body_mess,
-        to=f"whatsapp:{phone_number}",
-    )
-    print(message.sid)
 
 
 def split_long_string(text, max_len=1599):
