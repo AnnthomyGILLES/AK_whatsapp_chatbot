@@ -51,23 +51,15 @@ class UserCollection:
     def delete_document(self, query):
         return self.collection.delete_one(query)
 
-    def reset_document(self, doc):
-        # check if a matching document was found
-        if doc:
-            # add a new "timestamp" field to the document with the current time
-            timestamp = datetime.datetime.utcnow()
-            self.collection.update_one(
-                {"_id": doc["_id"]},
-                {"$set": {"history_timestamp": timestamp, "history": []}},
-            )
-            logger.info(f"Added timestamp {timestamp} to document {doc['_id']}")
-        else:
-            logger.info("No matching document found.")
-
     def increment_nb_tokens_messages(self, doc, amount):
         # increment the field by the specified amount for the specified document
+        timestamp = datetime.datetime.utcnow()
         self.collection.update_one(
-            {"_id": doc["_id"]}, {"$inc": {"nb_tokens": amount, "nb_messages": 1}}
+            {"_id": doc["_id"]},
+            {
+                "$inc": {"nb_tokens": amount, "nb_messages": 1},
+                "$set": {"timestamp_last_messages": timestamp},
+            },
         )
 
     def reset_tokens(self):
