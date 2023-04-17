@@ -58,29 +58,137 @@ WHATIA_WEBSITE = os.getenv("WHATIA_WEBSITE")
 
 stripe.api_key = stripe_keys["secret_key"]
 
-ACTIVATION_MESSAGE = """Bienvenue dans le club d'utilisateurs privé de WhatIA ! Nous sommes ravis de t'avoir parmi 
-nous. Ton compte est maintenant actif et tu disposes d'un accès illimité à toutes les fonctionnalités de notre bot 
-intelligent. N'hésite pas à nous contacter (contact@ak-intelligence.com) si tu as des questions ou besoin d'aide."""
 
-WELCOME_MESSAGE = """Bonjour et bienvenue sur WhatIA ! 🎉
+WELCOME_MESSAGE = """🇬🇧
+					Welcome! 🤖 \n
+					I am your intelligent personal assistant, ready to answer all your questions. 💬💡 \n
+					Powered by artificial intelligence, I can assist you accurately and efficiently. Here are some examples of what I can do for you: 🧐🤖 \n\n
 
-Je suis votre assistant personnel intelligent, prêt à répondre à toutes vos questions et à vous aider avec vos 
-demandes. Propulsé par une puissante Intelligence Artificielle, je peux vous assister de manière précise et 
-efficace. Voici quelques exemples de ce que je peux faire pour vous : \n\n
+					1️⃣ Answer general and complex questions \n
+					2️⃣ Provide detailed information on events or places \n
+					3️⃣ Help you with daily tasks, such as writing emails or preparing recipes \n
+					4️⃣ Analyze and summarize articles for you \n
+					5️⃣ Translate or complete texts in multiple languages \n
+					6️⃣ Answer interview questions \n
 
-1️⃣ Répondre à des questions générales et complexes \n
-2️⃣ Vous fournir des informations détaillées sur des événements ou des lieux \n
-3️⃣ Vous aider avec des tâches quotidiennes, comme la rédaction de mails ou la proposition de recettes \n
-4️⃣ Analyser et résumer des articles \n
-5️⃣ Traduire des phrases ou des textes complets dans plusieurs langues \n
-6️⃣ Répondre à des questions d'entretien \n
-7️⃣ Et bien plus! \n\n
+					And so much more! 🤩 \n\n
 
-Et bien plus encore ! \n\n
+					Do not hesitate to contact our team if you have any questions or need help. They are available to answer all your questions 🙌 \n
 
-Si vous avez des questions ou si vous avez besoin d'aide, n'hésitez pas à me le faire savoir. Je suis là pour vous 
-assister 24h/24 et 7j/7. Alors, commençons notre aventure ensemble ! 🚀"""
+					🌐 Website: https://app.whatia.fr \n
+					📧 Email: contact@whatia.fr \n
+					📷 Instagram (Follow me so you don't miss out on great deals!💰): https://www.instagram.com/app.whatia.fr \n\n\n
 
+					🇫🇷 
+					Bienvenue!🤖 \n
+					Je suis ton assistant personnel intelligent, prêt à répondre à toutes tes questions. 💬💡 \n
+					Propulsé par une intelligence artificielle, je peux t'assister de manière précise et efficace. Voici quelques exemples de ce que je peux faire pour toi : 🧐🤖 \n\n
+
+						1️⃣ Répondre à des questions générales et complexes \n
+						2️⃣ Te fournir des informations détaillées sur des événements ou des lieux \n
+						3️⃣ T'aider avec des tâches quotidiennes, comme la rédaction de mails ou la préparation de recettes \n
+						4️⃣ Analyser et résumer des articles pour toi \n
+						5️⃣ Traduire des phrases ou des textes complets dans plusieurs langues \n
+						6️⃣ Répondre à des questions d'entretien \n\n
+
+						Et bien plus encore !  🤩 \n\n
+
+
+					N'hésite pas à contacter le support si tu as des questions ou si tu as besoin d'aide. Notre équipe est disponible pour répondre à toutes tes interrogations pour t'aider à profiter pleinement de ce que je peux t'offrir🙌 \n
+
+					🌐 Site web: https://app.whatia.fr \n
+					📧 Mail: contact@whatia.fr \n
+					📷 Instagram (Abonnes-toi pour ne pas rater les bons plans!💰): https://www.instagram.com/app.whatia.fr"""
+
+WELCOME_MESSAGE_CTA = """🇬🇧
+					👉 If you have read the message above carefully, your free trial has started and you are now ready to discover all my features. To get started, simply chat with me by replying to this message in the language of your choice.  \n
+					Let's go! Tell me what you want! 🎬 \n\n
+
+					🇫🇷 
+					👉 Si tu as bien lu message plus haut, ton essai gratuit a commencé, tu est maintenant prêt à découvrir toutes mes fonctionnalités. 
+					Pour commencer il suffit de discuter avec moi en répondant a ce message dans la langue que tu souhaites. \n
+					Allons-y! Dis moi ce que tu veux! 🎬"""
+
+TRIAL_END_MESSAGE = """🇬🇧
+					We are delighted that you enjoyed your free trial. That's a great start! 😊 \n
+					To continue enjoying WhatIA, you can choose between a one-time payment or a subscription. Here are the benefits: \n
+
+					    - Nearly unlimited messages 📩 \n
+					    - Available 24/7 🕰️ \n
+                        - All chatbot updates \n
+					    - No advertising 🚫 \n\n
+
+					So don't waste any more time searching for answers to your questions! Imagine all the questions you could ask and the instant answers you could receive! \n\n
+
+					The offers are right here: \n
+
+					    🔑 Weekly pass (one-time payment) €4.90: app.whatia.fr/week \n
+					    🔑 Monthly pass (one-time payment) €9.90: app.whatia.fr/month \n
+					    🔁 Weekly subscription (-50%) €2.49: app.whatia.fr/weekly \n
+					    🔁 Monthly subscription (-25%) €7.49: app.whatia.fr/monthly \n\n
+
+					You will receive a confirmation message for any purchase. 📩👍 \n
+					For subscribers (not weekly or monthly pass), the management/cancellation of your subscription takes place here: app.whatia.fr/subscription 📅 \n\n
+
+					Any questions? We are here to support you on this adventure with WhatIA: \n
+					📧 Email: contact@whatia.fr \n
+					📷 Instagram: https://www.instagram.com/app.whatia.fr \n\n
+
+					We look forward to seeing you again as a premium user of WhatIA! 🤝 \n\n\n
+
+
+					🇫🇷 
+					Nous sommes ravis que vous ayez profité de vos messages d'essai gratuit de WhatIA. C'est un très bon départ! 😊 \n
+					Passez par un paiement unique ou un abonnement pour continuer à profiter de Whatia. Les avantages: \n
+						- Message quasiment illimités 📩 \n
+						- Disponible 24h/24h 7j/7j 🕰️ \n
+                        - Toutes les mises à jour du chatbot \n
+						- Sans publicité 🚫 \n
+
+					Ne perdez donc plus des heures à chercher des réponses à vos questions! Imaginez toutes les questions que vous pourriez poser, et les réponses que vous pourriez recevoir instantanément! \n\n
+
+					Les offres sont par ici: \n
+
+						- 🔑 pass semaine (paiement unique) 4€90 : app.whatia.fr/week \n
+						- 🔑 pass mois (paiement unique) 9€90 : app.whatia.fr/month \n
+						- 🔁 abonnement hebdomadaire (-50%) 2€49 : app.whatia.fr/weekly \n
+						- 🔁 abonnement mensuel (-25%) 7€49 : app.whatia.fr/monthly \n\n
+
+					Un message de confirmation vous sera envoyé pour tout achat. 📩👍 \n
+					Pour les abonnés (=non pass semaine ou mois) la gestion/résiliation de votre abonnement se passe ensuite ici: app.whatia.fr/subscription 📅 \n\n
+
+					Des questions? Nous sommes là pour vous accompagner dans cette aventure avec WhatIA \n
+						📧 Mail: contact@whatia.fr \n
+						📷 Instagram: https://www.instagram.com/app.whatia.fr \n\n
+
+					
+					Nous sommes impatients de vous revoir en tant qu'utilisateur premium de WhatIA! 🤝
+"""
+
+
+ACTIVATION_MESSAGE = """🇬🇧
+					🎉Welcome to the privileged circle of WhatIA premium users! Congrats! 🎊 \n
+					We are delighted to welcome you among us and offer you privileged access to all the features of our chatbot. With your premium account, you are ready to enjoy a superior quality experience. Only your imagination is the limit! 💡📱 \n
+					Whether you want to improve your user experience or discover new features, we are here to accompany you throughout your use. So don't hesitate to contact us if you have any questions or need help. Our team is at your disposal to offer you an unforgettable experience on WhatIA. 🤝👨‍💼 \n\n
+
+					📧 Email: contact@whatia.fr \n
+					🔑 Manage your subscription (if subscribed): app.whatia.fr/subscription \n
+					📷 Instagram (-5% for subscribers! On request): https://www.instagram.com/app.whatia.fr \n\n
+
+					Congratulations on your choice! You won't regret it, enjoy the experience! 🚀
+
+					\n\n\n
+
+					🇫🇷
+					🎉Bienvenue dans le cercle privilégié des utilisateurs premium de WhatIA! Félicitations! 🎊 \n
+					Nous sommes ravis de t'accueillir parmi nous et de te proposer un accès privilegié à toutes les fonctionnalités de notre chatbot. Avec ton compte premium, tu es prêt à profiter d'une expérience de qualité supérieure. Seule ton imagination est la limite!💡📱 \n
+					Que tu souhaites améliorer ton expérience utilisateur ou découvrir de nouvelles fonctionnalités, nous sommes là pour t'accompagner tout au long de ton utilisation. N'hésite donc pas à nous contacter si tu as des questions ou si tu as besoin d'aide. Notre équipe est à ta disposition pour t'offrir une expérience inoubliable sur WhatIA. 🤝👨‍💼 \n\n
+
+					📧 Mail: contact@whatia.fr \n
+					🔑 Gérer ton abonnement (si abonné): app.whatia.fr/abonnement \n
+					📷 Instagram (-5% pour les abonnés! Sur demande): https://www.instagram.com/app.whatia.fr  \n\n
+
+					Félicitations pour ton choix! Tu ne le regretteras pas, profites de l'expérience! 🚀"""
 
 EXAMPLE_MESSAGE = """
 📖 Demander une définition : "Qu'est-ce que le machine learning ?"
@@ -202,8 +310,7 @@ async def bot():
 
     if doc["is_blocked"]:
         send_message(
-            f"Vous avez atteint votre limite d'essai gratuit de {FREE_TRIAL_LIMIT} messages. Pour "
-            f"continuer à utiliser WhatIA, vous devriez souscrire à l'une de nos offres: \n {WHATIA_WEBSITE}",
+            TRIAL_END_MESSAGE,
             phone_number,
         )
         return ""
