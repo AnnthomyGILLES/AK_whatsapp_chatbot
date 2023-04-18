@@ -26,14 +26,12 @@ FREE_TRIAL_LIMIT = config.getint(ENV, "FREE_TRIAL_LIMIT")
 
 load_dotenv(dotenv_path=env_path)
 
-
 logger.remove(0)
 logger.add(
     sys.stderr,
     format="{time:HH:mm:ss.SS} | {file} took {elapsed} to execute | {level} | {message} ",
     colorize=True,
 )
-
 
 app = Flask(__name__)
 
@@ -58,28 +56,7 @@ WHATIA_WEBSITE = os.getenv("WHATIA_WEBSITE")
 
 stripe.api_key = stripe_keys["secret_key"]
 
-
-WELCOME_MESSAGE = """🇬🇧
-					Welcome! 🤖 \n
-					I am your intelligent personal assistant, ready to answer all your questions. 💬💡 \n
-					Powered by artificial intelligence, I can assist you accurately and efficiently. Here are some examples of what I can do for you: 🧐🤖 \n\n
-
-					1️⃣ Answer general and complex questions \n
-					2️⃣ Provide detailed information on events or places \n
-					3️⃣ Help you with daily tasks, such as writing emails or preparing recipes \n
-					4️⃣ Analyze and summarize articles for you \n
-					5️⃣ Translate or complete texts in multiple languages \n
-					6️⃣ Answer interview questions \n
-
-					And so much more! 🤩 \n\n
-
-					Do not hesitate to contact our team if you have any questions or need help. They are available to answer all your questions 🙌 \n
-
-					🌐 Website: https://app.whatia.fr \n
-					📧 Email: contact@whatia.fr \n
-					📷 Instagram (Follow me so you don't miss out on great deals!💰): https://www.instagram.com/app.whatia.fr \n\n\n
-
-					🇫🇷 
+WELCOME_MESSAGE = """🇫🇷
 					Bienvenue!🤖 \n
 					Je suis ton assistant personnel intelligent, prêt à répondre à toutes tes questions. 💬💡 \n
 					Propulsé par une intelligence artificielle, je peux t'assister de manière précise et efficace. Voici quelques exemples de ce que je peux faire pour toi : 🧐🤖 \n\n
@@ -98,16 +75,35 @@ WELCOME_MESSAGE = """🇬🇧
 
 					🌐 Site web: https://app.whatia.fr \n
 					📧 Mail: contact@whatia.fr \n
-					📷 Instagram (Abonnes-toi pour ne pas rater les bons plans!💰): https://www.instagram.com/app.whatia.fr"""
+					📷 Instagram (Abonne-toi pour ne pas rater les bons plans!💰): https://www.instagram.com/app.whatia.fr"""
 
+WELCOME_MESSAGE_GB = """🇬🇧
+					Welcome! 🤖 \n
+					I am your intelligent personal assistant, ready to answer all your questions. 💬💡 \n
+					Powered by artificial intelligence, I can assist you accurately and efficiently. Here are some examples of what I can do for you: 🧐🤖 \n\n
+
+					1️⃣ Answer general and complex questions \n
+					2️⃣ Provide detailed information on events or places \n
+					3️⃣ Help you with daily tasks, such as writing emails or preparing recipes \n
+					4️⃣ Analyze and summarize articles for you \n
+					5️⃣ Translate or complete texts in multiple languages \n
+					6️⃣ Answer interview questions \n
+
+					And so much more! 🤩 \n\n
+
+					Do not hesitate to contact our team if you have any questions or need help. They are available to answer all your questions 🙌 \n
+
+					🌐 Website: https://app.whatia.fr \n
+					📧 Email: contact@whatia.fr \n
+					📷 Instagram (Follow me so you don't miss out on great deals!💰): https://www.instagram.com/app.whatia.fr"""
 WELCOME_MESSAGE_CTA = """🇬🇧
 					👉 If you have read the message above carefully, your free trial has started and you are now ready to discover all my features. To get started, simply chat with me by replying to this message in the language of your choice.  \n
 					Let's go! Tell me what you want! 🎬 \n\n
 
 					🇫🇷 
-					👉 Si tu as bien lu message plus haut, ton essai gratuit a commencé, tu est maintenant prêt à découvrir toutes mes fonctionnalités. 
-					Pour commencer il suffit de discuter avec moi en répondant a ce message dans la langue que tu souhaites. \n
-					Allons-y! Dis moi ce que tu veux! 🎬"""
+					👉 Si tu as bien lu le message précédent, ton essai gratuit a commencé, tu es maintenant prêt à découvrir toutes mes fonctionnalités. 
+					Pour commencer il suffit de discuter avec moi en répondant à ce message dans la langue que tu souhaites. \n
+					Allons-y! Dis-moi ce que tu veux! 🎬"""
 
 TRIAL_END_MESSAGE = """🇬🇧
 					We are delighted that you enjoyed your free trial. That's a great start! 😊 \n
@@ -164,7 +160,6 @@ TRIAL_END_MESSAGE = """🇬🇧
 					
 					Nous sommes impatients de vous revoir en tant qu'utilisateur premium de WhatIA! 🤝
 """
-
 
 ACTIVATION_MESSAGE = """🇬🇧
 					🎉Welcome to the privileged circle of WhatIA premium users! Congrats! 🎊 \n
@@ -289,6 +284,9 @@ async def bot():
 
         if doc is None:
             doc_id = users.add_user(phone_number)
+            send_message(WELCOME_MESSAGE, phone_number)
+            send_message(WELCOME_MESSAGE_GB, phone_number)
+
             doc = users.collection.find_one(doc_id)
 
     if (
@@ -397,6 +395,7 @@ def webhook():
             _ = users.add_user(stripe_customer_phone, sub_current_period_end)
             send_message(ACTIVATION_MESSAGE, stripe_customer_phone)
     elif event_type == "checkout.session.completed":
+        sub_current_period_end = datetime.datetime.utcnow()
         # Pass 7 jours
         if object_["amount_subtotal"] == 490:
             sub_current_period_end = datetime.datetime.utcnow() + datetime.timedelta(
