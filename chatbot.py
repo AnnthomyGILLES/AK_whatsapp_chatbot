@@ -3,6 +3,7 @@ import datetime
 import os
 import re
 import sys
+from pathlib import Path
 
 import openai
 import stripe
@@ -19,6 +20,7 @@ from utils import count_tokens
 
 ENV = os.getenv("ENV_WHATIA", "PROD")
 config = configparser.ConfigParser()
+config_file_path = Path(__file__).resolve().parent / "config.ini"
 config.read("config.ini")
 env_path = config[ENV]["ENV_FILE_PATH"]
 HISTORY_TTL = config.getint(ENV, "HISTORY_TTL")
