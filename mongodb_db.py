@@ -109,6 +109,7 @@ class UserCollection:
             "nb_tokens": 0,
             "nb_messages": 0,
             "is_blocked": False,
+            "datetime_created": datetime.datetime.utcnow(),
         }
 
         try:
