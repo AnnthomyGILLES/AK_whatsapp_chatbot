@@ -16,6 +16,7 @@ from chatgpt_api.chatgpt import ask_chat_conversation
 from mongodb_db import UserCollection
 from notifier.send_notification import send_message
 from parse_phone_numbers import extract_phone_number
+from prompt_to_image.prompt_to_image import generate_image
 from utils import count_tokens
 
 ENV = os.getenv("ENV_WHATIA", "PROD")
@@ -262,7 +263,7 @@ async def bot():
         str: An empty string (required for Twilio to work correctly).
     """
     collection_name = "users"
-    incoming_msg = request.values["Body"].lower().strip()
+    incoming_msg = str(request.values["Body"].lower().strip())
     media_url = request.form.get("MediaUrl0")
     phone_number = extract_phone_number(request.values["From"].lower())
     nb_tokens = count_tokens(incoming_msg)
@@ -274,6 +275,10 @@ async def bot():
         send_message("Il faut écrire pour discuter avec moi.", phone_number)
         return ""
     if not incoming_msg:
+        return ""
+    elif incoming_msg.startswith(("!image", "! image")):
+        dalle_media_url = await generate_image(incoming_msg)
+        send_message(incoming_msg, phone_number, media_url=dalle_media_url)
         return ""
 
     # Check cache for user document
