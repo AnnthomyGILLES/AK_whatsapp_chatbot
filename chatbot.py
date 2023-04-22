@@ -272,7 +272,9 @@ async def bot():
         send_message("Ta question est beaucoup trop longue.", phone_number)
         return ""
     if media_url:
-        send_message("Il faut écrire pour discuter avec moi.", phone_number)
+        send_message(
+            "Il faut écrire pour discuter avec moi.", phone_number, media_url=media_url
+        )
         return ""
     if not incoming_msg:
         return ""
