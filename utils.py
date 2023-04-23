@@ -34,6 +34,7 @@ def load_config(env_name="DEVELOPMENT"):
     env_path = Path(__file__).resolve().parent / config[ENV]["ENV_FILE_PATH"]
 
     load_dotenv(dotenv_path=env_path)
+    return config
 
 
 def split_long_string(text, max_len=1200):
