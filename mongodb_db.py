@@ -135,6 +135,12 @@ class UserCollection:
     def list_all_users(self):
         return list(self.collection.find({}))
 
+    def block_user(self, user_id):
+        self.collection.update_one(
+            {"_id": user_id},
+            {"$set": {"is_blocked": True}},
+        )
+
 
 if __name__ == "__main__":
     # Initialize the UserCollection with the specified collection name
