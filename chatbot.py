@@ -16,7 +16,7 @@ from parse_phone_numbers import extract_phone_number
 from prompt_to_image.prompt_to_image import generate_image
 from utils import count_tokens, split_long_string, load_config
 
-env_name = "PROD"
+env_name = os.getenv("ENV_WHATIA")
 config = load_config(env_name)
 
 HISTORY_TTL = config.getint(env_name, "HISTORY_TTL")
@@ -253,6 +253,8 @@ async def bot():
             )
             return ""
 
+    if not incoming_msg:
+        return ""
     nb_tokens = count_tokens(incoming_msg)
 
     app.logger.info(
@@ -262,43 +264,29 @@ async def bot():
     if nb_tokens >= int(MAX_TOKEN_LENGTH):
         send_message("Ta question est beaucoup trop longue.", phone_number)
         return ""
-    if not incoming_msg:
-        return ""
-    elif incoming_msg.startswith(("!image", "! image")):
+
+    if incoming_msg.startswith(("!image", "! image")):
         incoming_msg = re.sub(r"^! ?image", "", incoming_msg)
         dalle_media_url = await generate_image(incoming_msg)
         send_message(incoming_msg, phone_number, media_url=dalle_media_url)
         return ""
-
-    # Check cache for user document
-    doc = cache.get(phone_number)
     users = UserCollection(collection_name)
 
-    if doc is None:
-        # If not in cache, get from database and add to cache
-        doc = users.find_document("phone_number", phone_number)
-
-        if doc is None:
-            doc_id = users.add_user(phone_number)
-            send_message(WELCOME_MESSAGE, phone_number)
-            send_message(WELCOME_MESSAGE_GB, phone_number)
-
-            doc = users.collection.find_one(doc_id)
+    doc = await get_user_document(collection_name, phone_number)
 
     if (
         doc.get("nb_messages") >= FREE_TRIAL_LIMIT
         and doc.get("current_period_end") is None
     ):
-        users.collection.update_one(
-            {"_id": doc["_id"]},
-            {"$set": {"is_blocked": True}},
-        )
+        users.block_user(doc["_id"])
 
     message = [
         {
             "role": "system",
-            "content": "You are a helpful assistant called WhatIA and talking either in french, spanish, italian, english or more "
-            "depending on the language used to talk to you.",
+            "content": "you are an assistant who automatically speaks the language of the person who interacts with "
+            "you. if he changes language, you automatically adopt the new language. you answer all "
+            "questions unless you don't think you have the answer, in which case you answer by saying that "
+            "your answer is less certain.",
         },
     ]
 
@@ -306,10 +294,8 @@ async def bot():
         send_message(TRIAL_END_MESSAGE_GB, phone_number)
         send_message(TRIAL_END_MESSAGE_FR, phone_number)
         return ""
-    historical_messages = []
-    if doc.get("history"):
-        historical_messages = doc.get("history")
 
+    historical_messages = doc.get("history", [])
     historical_messages.append({"role": "user", "content": incoming_msg})
 
     answer = await ask_chat_conversation(message + historical_messages)
@@ -325,6 +311,22 @@ async def bot():
     cache.set(phone_number, doc)
 
     return ""
+
+
+async def get_user_document(collection_name, phone_number):
+    doc = cache.get(phone_number)
+    users = UserCollection(collection_name)
+
+    if doc is None:
+        doc = users.find_document("phone_number", phone_number)
+
+        if doc is None:
+            doc_id = users.add_user(phone_number)
+            send_message(WELCOME_MESSAGE, phone_number)
+            send_message(WELCOME_MESSAGE_GB, phone_number)
+
+            doc = users.collection.find_one(doc_id)
+    return doc
 
 
 # TODO Anonymize phone number
