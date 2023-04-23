@@ -46,7 +46,7 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "top-secret!")
 app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
 
-cache = Cache(app, config={"CACHE_TYPE": "simple", "CACHE_DEFAULT_TIMEOUT": 60})
+cache = Cache(app, config={"CACHE_TYPE": "simple", "CACHE_DEFAULT_TIMEOUT": 120})
 
 # OpenAI Chat GPT
 openai.api_key = os.getenv("OPENAI_API_KEY")
