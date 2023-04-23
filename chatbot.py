@@ -13,6 +13,7 @@ from chatgpt_api.chatgpt import ask_chat_conversation
 from mongodb_db import UserCollection
 from notifier.send_notification import send_message
 from parse_phone_numbers import extract_phone_number
+from prompt_to_image.prompt_to_image import generate_image
 from utils import count_tokens, split_long_string, load_config
 
 env_name = "PROD"
@@ -20,7 +21,6 @@ config = load_config(env_name)
 
 HISTORY_TTL = config.getint(env_name, "HISTORY_TTL")
 FREE_TRIAL_LIMIT = config.getint(env_name, "FREE_TRIAL_LIMIT")
-
 
 dictConfig(
     {
@@ -180,7 +180,7 @@ ACTIVATION_MESSAGE = """🇬🇧
 
 					Congratulations on your choice! You won't regret it, enjoy the experience! 🚀
 
-					\n\n\n
+					\n\n
 
 					🇫🇷
 					🎉Bienvenue dans le cercle privilégié des utilisateurs premium de WhatIA! Félicitations! 🎊 \n
@@ -227,37 +227,6 @@ EXAMPLE_MESSAGE = """
 """
 
 
-def split_long_string(text, max_len=1599):
-    """
-    Split a long string into a list of strings of maximum length `max_len`.
-
-    Args:0
-        text (str): The input text to be split.
-        max_len (int, optional): The maximum length of each chunk. Defaults to 1599.
-
-    Returns:
-        list[str]: A list of strings, each with a length not exceeding `max_len`.
-    """
-    if len(text) <= max_len:
-        return [text]
-
-    sentences = re.split("(?<=[.!?]) +", text)
-    result = []
-    current_chunk = ""
-
-    for sentence in sentences:
-        if len(current_chunk) + len(sentence) + 1 <= max_len:
-            current_chunk += " " + sentence
-        else:
-            result.append(current_chunk.strip())
-            current_chunk = sentence
-
-    if current_chunk:
-        result.append(current_chunk.strip())
-
-    return result
-
-
 @app.route("/bot", methods=["POST"])
 async def bot():
     """
@@ -286,18 +255,20 @@ async def bot():
 
     nb_tokens = count_tokens(incoming_msg)
 
-    app.logger.info(f"Incoming message is: {incoming_msg}")
-    app.logger.info(f"Phone number is: {phone_number}")
+    app.logger.info(
+        f"Phone number {phone_number} sent the incoming message: {incoming_msg}"
+    )
 
     if nb_tokens >= int(MAX_TOKEN_LENGTH):
         send_message("Ta question est beaucoup trop longue.", phone_number)
         return ""
     if not incoming_msg:
         return ""
-    # elif incoming_msg.startswith(("!image", "! image")):
-    #     dalle_media_url = await generate_image(incoming_msg)
-    #     send_message(incoming_msg, phone_number, media_url=dalle_media_url)
-    #     return ""
+    elif incoming_msg.startswith(("!image", "! image")):
+        incoming_msg = re.sub(r"^! ?image", "", incoming_msg)
+        dalle_media_url = await generate_image(incoming_msg)
+        send_message(incoming_msg, phone_number, media_url=dalle_media_url)
+        return ""
 
     # Check cache for user document
     doc = cache.get(phone_number)
