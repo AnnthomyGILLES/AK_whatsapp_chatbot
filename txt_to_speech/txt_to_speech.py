@@ -1,11 +1,14 @@
 import configparser
 import os
+import tempfile
 from pathlib import Path
 
 import boto3
 from dotenv import load_dotenv
 
-ENV = os.getenv("ENV_WHATIA", "DEVELOPMENT")
+ENV = os.getenv("ENV_WHATIA", "PROD")
+
+# Read the configuration file
 config = configparser.ConfigParser()
 config_file_path = Path(__file__).resolve().parent.parent / "config.ini"
 
@@ -15,22 +18,29 @@ env_path = Path(__file__).resolve().parent.parent / config[ENV]["ENV_FILE_PATH"]
 
 load_dotenv(dotenv_path=env_path)
 
-# aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
-# aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 
-if __name__ == "__main__":
+def text_to_speech(text, output_format="mp3", language_code="fr-FR"):
     # Set up AWS Polly client
     client = boto3.client(
         "polly", region_name="us-west-2"
     )  # Change the region as per your requirements
 
-    # Specify the text to be converted to speech
-    text = "Hello, this is a sample text to be converted to speech using AWS Polly."
-
     # Set up the parameters for the synthesis
     response = client.synthesize_speech(
-        Text=text,
-        OutputFormat="mp3",
-        VoiceId="Joanna",  # Change the voice as per your requirements
+        Text=text, OutputFormat=output_format, VoiceId="Lea", LanguageCode=language_code
     )
-    print(response)
+
+    # Save the audio as a temporary file
+    with tempfile.NamedTemporaryFile(suffix=f".{output_format}", delete=False) as f:
+        f.write(response["AudioStream"].read())
+        tmp_audio_file = f.name
+
+    return tmp_audio_file
+
+
+if __name__ == "__main__":
+    text = "Hello, this is a sample text to be converted to speech using AWS Polly."
+    output_format = "mp3"
+    language_code = "en-GB"
+    tmp_audio_file = text_to_speech(text, output_format, language_code)
+    print(f"The audio file has been saved to {tmp_audio_file}")
