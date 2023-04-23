@@ -1,22 +1,10 @@
-import configparser
-import os
 import tempfile
-from pathlib import Path
 
 import boto3
-from dotenv import load_dotenv
 
-ENV = os.getenv("ENV_WHATIA", "PROD")
+from utils import load_config
 
-# Read the configuration file
-config = configparser.ConfigParser()
-config_file_path = Path(__file__).resolve().parent.parent / "config.ini"
-
-config.read(config_file_path)
-
-env_path = Path(__file__).resolve().parent.parent / config[ENV]["ENV_FILE_PATH"]
-
-load_dotenv(dotenv_path=env_path)
+load_config()
 
 
 def text_to_speech(text, output_format="mp3", language_code="fr-FR"):

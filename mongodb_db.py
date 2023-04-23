@@ -1,23 +1,14 @@
-import configparser
 import datetime
 import os
-from pathlib import Path
 
 import pymongo
-from dotenv import load_dotenv
 from loguru import logger
 from pymongo import ReturnDocument
 
-ENV = os.getenv("ENV_WHATIA", "PROD")
+from utils import load_config
 
-# Read the configuration file
-config = configparser.ConfigParser()
-config_file_path = Path(__file__).resolve().parent / "config.ini"
-config.read(config_file_path)
-env_path = Path(__file__).resolve().parent / config[ENV]["ENV_FILE_PATH"]
-database_uri = config[ENV]["DATABASE_URI"]
-
-load_dotenv(dotenv_path=env_path)
+load_config()
+database_uri = os.getenv("DATABASE_URI")
 
 
 class DuplicateUser(Exception):

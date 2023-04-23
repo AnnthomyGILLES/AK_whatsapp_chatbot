@@ -1,7 +1,11 @@
+import configparser
+import os
 import re
+from pathlib import Path
 from urllib.request import urlopen
 
 import tiktoken
+from dotenv import load_dotenv
 from mutagen.mp3 import MP3
 
 encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
@@ -17,6 +21,19 @@ def get_audio_duration(url):
     audio = MP3(audio_file)
     duration = audio.info.length
     return duration
+
+
+def load_config(env_name="DEVELOPMENT"):
+    ENV = os.getenv("ENV_WHATIA", env_name)
+
+    # Read the configuration file
+    config = configparser.ConfigParser()
+    config_file_path = Path(__file__).resolve().parent / "config.ini"
+    config.read(config_file_path)
+
+    env_path = Path(__file__).resolve().parent / config[ENV]["ENV_FILE_PATH"]
+
+    load_dotenv(dotenv_path=env_path)
 
 
 def split_long_string(text, max_len=1200):

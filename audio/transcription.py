@@ -1,11 +1,9 @@
 import os
-from pathlib import Path
-
-from dotenv import load_dotenv
 
 from audio import utils
+from utils import load_config
 
-load_dotenv(dotenv_path=Path("..", ".env"))
+load_config()
 
 
 def audio_to_text(media_url):

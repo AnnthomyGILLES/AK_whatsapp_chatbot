@@ -1,28 +1,19 @@
-# create.py
 import asyncio
-import configparser
 import os
-from pathlib import Path
 
 import aiohttp
 import openai
-from dotenv import load_dotenv
 from loguru import logger
 from openai.error import RateLimitError
 from ratelimit import sleep_and_retry, limits
+
+from utils import load_config
 
 ONE_MINUTE = 60
 MAX_CALLS_PER_MINUTE = 30
 MAX_TOKENS = 400
 
-ENV = os.getenv("ENV_WHATIA", "DEVELOPMENT")
-config = configparser.ConfigParser()
-config_file_path = Path(__file__).resolve().parent.parent / "config.ini"
-config.read(config_file_path)
-env_path = Path(__file__).resolve().parent.parent / config[ENV]["ENV_FILE_PATH"]
-
-load_dotenv(dotenv_path=env_path)
-
+load_config()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 

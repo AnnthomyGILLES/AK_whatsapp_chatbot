@@ -18,18 +18,10 @@ from mongodb_db import UserCollection
 from notifier.send_notification import send_message
 from parse_phone_numbers import extract_phone_number
 from prompt_to_image.prompt_to_image import generate_image
-from utils import count_tokens
-from utils import count_tokens, split_long_string, get_audio_duration
+from utils import count_tokens, split_long_string, load_config
 
-ENV = os.getenv("ENV_WHATIA", "PROD")
-config = configparser.ConfigParser()
-config_file_path = Path(__file__).resolve().parent / "config.ini"
-config.read("config.ini")
-env_path = config[ENV]["ENV_FILE_PATH"]
-HISTORY_TTL = config.getint(ENV, "HISTORY_TTL")
-FREE_TRIAL_LIMIT = config.getint(ENV, "FREE_TRIAL_LIMIT")
-
-load_dotenv(dotenv_path=env_path)
+env_name = "DEVELOPMENT"
+config = load_config(env_name)
 
 logger.remove(0)
 logger.add(

@@ -1,20 +1,10 @@
-import configparser
 import os
-from pathlib import Path
 
-from dotenv import load_dotenv
 from twilio.rest import Client
 
-ENV = os.getenv("ENV_WHATIA", "DEVELOPMENT")
-config = configparser.ConfigParser()
-config_file_path = Path(__file__).resolve().parent.parent / "config.ini"
+from utils import load_config
 
-config.read(config_file_path)
-
-env_path = Path(__file__).resolve().parent.parent / config[ENV]["ENV_FILE_PATH"]
-
-load_dotenv(dotenv_path=env_path)
-
+load_config()
 # Twilio
 account_sid = os.getenv("TWILIO_ACCOUNT_SID")
 auth_token = os.getenv("TWILIO_AUTH_TOKEN")
