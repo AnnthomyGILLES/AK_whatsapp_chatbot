@@ -1,5 +1,6 @@
 import configparser
 import os
+import re
 from pathlib import Path
 from urllib.request import urlopen
 
