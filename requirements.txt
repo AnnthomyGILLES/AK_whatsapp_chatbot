@@ -13,3 +13,6 @@ pytest~=7.1.2
 selenium~=3.141.0
 boto3~=1.26.118
 mutagen~=1.46.0
+Flask-Caching
+asgiref
+pyOpenSSL
