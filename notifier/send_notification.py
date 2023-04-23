@@ -23,7 +23,7 @@ twilio_phone_numer = os.getenv("TWILIO_PHONE_NUMBER")
 client = Client(account_sid, auth_token)
 
 
-def send_message(body_mess, phone_number):
+def send_message(body_mess, phone_number, media_url=None):
     """
     Send a WhatsApp message to the specified phone number using Twilio.
 
@@ -31,12 +31,13 @@ def send_message(body_mess, phone_number):
         body_mess (str): The content of the message to send.
         phone_number (str): The recipient's phone number.
     """
-    message = client.messages.create(
+    response = client.messages.create(
         from_=f"whatsapp:{twilio_phone_numer}",
         body=body_mess,
         to=f"whatsapp:{phone_number}",
+        media_url=media_url,
     )
-    print(message.sid)
+    print(response.sid)
 
 
 if __name__ == "__main__":
