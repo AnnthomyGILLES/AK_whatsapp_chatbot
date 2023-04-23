@@ -1,13 +1,10 @@
-import configparser
 import datetime
 import os
 import re
 import sys
-from pathlib import Path
 
 import openai
 import stripe
-from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_caching import Cache
 from loguru import logger
@@ -22,6 +19,9 @@ from utils import count_tokens, split_long_string, load_config
 
 env_name = "DEVELOPMENT"
 config = load_config(env_name)
+
+HISTORY_TTL = config.getint(env_name, "HISTORY_TTL")
+FREE_TRIAL_LIMIT = config.getint(env_name, "FREE_TRIAL_LIMIT")
 
 logger.remove(0)
 logger.add(
@@ -258,13 +258,13 @@ async def bot():
     """
     collection_name = "users"
     incoming_msg = str(request.values["Body"].lower().strip())
-    media_url = request.form.get("MediaUrl0")
     phone_number = extract_phone_number(request.values["From"].lower())
 
     media_url = request.form.get("MediaUrl0")
     if not incoming_msg:
         if media_url and request.form["MediaContentType0"] == "audio/ogg":
-            duration = get_audio_duration(media_url)
+            # TODO handle audio duration
+            # duration = get_audio_duration(media_url)
             incoming_msg = audio_to_text(media_url)
         else:
             send_message(
@@ -277,11 +277,6 @@ async def bot():
 
     if nb_tokens >= int(MAX_TOKEN_LENGTH):
         send_message("Ta question est beaucoup trop longue.", phone_number)
-        return ""
-    if media_url:
-        send_message(
-            "Il faut écrire pour discuter avec moi.", phone_number, media_url=media_url
-        )
         return ""
     if not incoming_msg:
         return ""
@@ -434,9 +429,9 @@ def webhook():
 
 
 if __name__ == "__main__":
-    if ENV == "DEVELOPMENT":
+    if env_name == "DEVELOPMENT":
         app.run(host="0.0.0.0", port=5000)
-    elif ENV == "PROD":
+    elif env_name == "PROD":
         app.run(
             host="0.0.0.0",
             port=5000,
