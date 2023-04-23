@@ -36,8 +36,32 @@ def load_config(env_name="DEVELOPMENT"):
     return config
 
 
-def split_long_string(long_string, substring_size=1599):
-    return [
-        long_string[i : i + substring_size]
-        for i in range(0, len(long_string), substring_size)
-    ]
+def split_long_string(text, max_len=1599):
+    """
+    Split a long string into a list of strings of maximum length `max_len`.
+
+    Args:
+        text (str): The input text to be split.
+        max_len (int, optional): The maximum length of each chunk. Defaults to 1200.
+
+    Returns:
+        list[str]: A list of strings, each with a length not exceeding `max_len`.
+    """
+    if len(text) <= max_len:
+        return [text]
+
+    sentences = re.split("(?<=[.!?]) +", text)
+    result = []
+    current_chunk = ""
+
+    for sentence in sentences:
+        if len(current_chunk) + len(sentence) + 1 <= max_len:
+            current_chunk += " " + sentence
+        else:
+            result.append(current_chunk.strip())
+            current_chunk = sentence
+
+    if current_chunk:
+        result.append(current_chunk.strip())
+
+    return result
