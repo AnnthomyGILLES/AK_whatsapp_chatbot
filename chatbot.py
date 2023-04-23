@@ -323,10 +323,9 @@ async def bot():
     ]
 
     if doc["is_blocked"]:
-        send_message(
-            TRIAL_END_MESSAGE,
-            phone_number,
-        )
+        answers = split_long_string(TRIAL_END_MESSAGE)
+        for answer in answers:
+            send_message(answer, phone_number)
         return ""
     historical_messages = []
     if doc.get("history"):
