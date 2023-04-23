@@ -12,12 +12,14 @@ from flask import Flask, request, jsonify
 from flask_caching import Cache
 from loguru import logger
 
+from audio.transcription import audio_to_text
 from chatgpt_api.chatgpt import ask_chat_conversation
 from mongodb_db import UserCollection
 from notifier.send_notification import send_message
 from parse_phone_numbers import extract_phone_number
 from prompt_to_image.prompt_to_image import generate_image
 from utils import count_tokens
+from utils import count_tokens, split_long_string, get_audio_duration
 
 ENV = os.getenv("ENV_WHATIA", "PROD")
 config = configparser.ConfigParser()
@@ -266,6 +268,19 @@ async def bot():
     incoming_msg = str(request.values["Body"].lower().strip())
     media_url = request.form.get("MediaUrl0")
     phone_number = extract_phone_number(request.values["From"].lower())
+
+    media_url = request.form.get("MediaUrl0")
+    if not incoming_msg:
+        if media_url and request.form["MediaContentType0"] == "audio/ogg":
+            duration = get_audio_duration(media_url)
+            incoming_msg = audio_to_text(media_url)
+        else:
+            send_message(
+                "Il faut écrire un message textuel ou enregistrer un audio pour discuter avec moi.",
+                phone_number,
+            )
+            return ""
+
     nb_tokens = count_tokens(incoming_msg)
 
     if nb_tokens >= int(MAX_TOKEN_LENGTH):
