@@ -102,7 +102,7 @@ WELCOME_MESSAGE_CTA = """🇬🇧
 					Pour commencer il suffit de discuter avec moi en répondant à ce message dans la langue que tu souhaites. \n
 					Allons-y! Dis-moi ce que tu veux! 🎬"""
 
-TRIAL_END_MESSAGE = """🇬🇧
+TRIAL_END_MESSAGE_GB = """🇬🇧
 					We are delighted that you enjoyed your free trial. That's a great start! 😊 \n
 					To continue enjoying WhatIA, you can choose between a one-time payment or a subscription. Here are the benefits: \n
 
@@ -127,10 +127,10 @@ TRIAL_END_MESSAGE = """🇬🇧
 					📧 Email: contact@whatia.fr \n
 					📷 Instagram: https://www.instagram.com/app.whatia.fr \n\n
 
-					We look forward to seeing you again as a premium user of WhatIA! 🤝 \n\n\n
+					We look forward to seeing you again as a premium user of WhatIA! 🤝
+"""
 
-
-					🇫🇷 
+TRIAL_END_MESSAGE_FR = """🇫🇷 
 					Nous sommes ravis que vous ayez profité de vos messages d'essai gratuit de WhatIA. C'est un très bon départ! 😊 \n
 					Passez par un paiement unique ou un abonnement pour continuer à profiter de Whatia. Les avantages: \n
 						- Message quasiment illimités 📩 \n
@@ -154,7 +154,7 @@ TRIAL_END_MESSAGE = """🇬🇧
 						📧 Mail: contact@whatia.fr \n
 						📷 Instagram: https://www.instagram.com/app.whatia.fr \n\n
 
-					
+
 					Nous sommes impatients de vous revoir en tant qu'utilisateur premium de WhatIA! 🤝
 """
 
@@ -318,9 +318,8 @@ async def bot():
     ]
 
     if doc["is_blocked"]:
-        answers = split_long_string(TRIAL_END_MESSAGE)
-        for answer in answers:
-            send_message(answer, phone_number)
+        send_message(TRIAL_END_MESSAGE_GB, phone_number)
+        send_message(TRIAL_END_MESSAGE_FR, phone_number)
         return ""
     historical_messages = []
     if doc.get("history"):
