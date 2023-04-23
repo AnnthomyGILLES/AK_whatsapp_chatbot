@@ -1,33 +1,44 @@
 import datetime
 import os
 import re
-import sys
+from logging.config import dictConfig
 
 import openai
 import stripe
 from flask import Flask, request, jsonify
 from flask_caching import Cache
-from loguru import logger
 
 from audio.transcription import audio_to_text
 from chatgpt_api.chatgpt import ask_chat_conversation
 from mongodb_db import UserCollection
 from notifier.send_notification import send_message
 from parse_phone_numbers import extract_phone_number
-from prompt_to_image.prompt_to_image import generate_image
 from utils import count_tokens, split_long_string, load_config
 
-env_name = "DEVELOPMENT"
+env_name = "PROD"
 config = load_config(env_name)
 
 HISTORY_TTL = config.getint(env_name, "HISTORY_TTL")
 FREE_TRIAL_LIMIT = config.getint(env_name, "FREE_TRIAL_LIMIT")
 
-logger.remove(0)
-logger.add(
-    sys.stderr,
-    format="{time:HH:mm:ss.SS} | {file} took {elapsed} to execute | {level} | {message} ",
-    colorize=True,
+
+dictConfig(
+    {
+        "version": 1,
+        "formatters": {
+            "default": {
+                "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
+            }
+        },
+        "handlers": {
+            "wsgi": {
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stderr",
+                "formatter": "default",
+            }
+        },
+        "root": {"level": "INFO", "handlers": ["wsgi"]},
+    }
 )
 
 app = Flask(__name__)
@@ -275,15 +286,18 @@ async def bot():
 
     nb_tokens = count_tokens(incoming_msg)
 
+    app.logger.info(f"Incoming message is: {incoming_msg}")
+    app.logger.info(f"Phone number is: {phone_number}")
+
     if nb_tokens >= int(MAX_TOKEN_LENGTH):
         send_message("Ta question est beaucoup trop longue.", phone_number)
         return ""
     if not incoming_msg:
         return ""
-    elif incoming_msg.startswith(("!image", "! image")):
-        dalle_media_url = await generate_image(incoming_msg)
-        send_message(incoming_msg, phone_number, media_url=dalle_media_url)
-        return ""
+    # elif incoming_msg.startswith(("!image", "! image")):
+    #     dalle_media_url = await generate_image(incoming_msg)
+    #     send_message(incoming_msg, phone_number, media_url=dalle_media_url)
+    #     return ""
 
     # Check cache for user document
     doc = cache.get(phone_number)
@@ -353,10 +367,10 @@ def webhook():
             payload, sig_header, stripe_keys["endpoint_secret"]
         )
     except ValueError:
-        logger.error("Invalid payload")
+        app.logger.error("Invalid payload")
         return jsonify({"error": "Invalid payload"}), 400
     except stripe.error.SignatureVerificationError:
-        logger.error("Invalid signature")
+        app.logger.error("Invalid signature")
         return jsonify({"error": "Invalid signature"}), 400
 
     event_type = event["type"]
@@ -375,7 +389,7 @@ def webhook():
         "customer.subscription.paused",
     ]:
         users.delete_document({"phone_number": stripe_customer_phone})
-        logger.info(f"User deleted from database: {stripe_customer_phone}")
+        app.logger.info(f"User deleted from database: {stripe_customer_phone}")
     elif event_type == "customer.subscription.created":
         sub_current_period_end = object_["current_period_end"]
         _ = users.add_user(stripe_customer_phone, sub_current_period_end)
@@ -387,7 +401,7 @@ def webhook():
         if object_.status in ["canceled", "unpaid"]:
             if not object_.cancel_at_period_end:
                 users.delete_document({"phone_number": stripe_customer_phone})
-                logger.info(f"User deleted from database: {stripe_customer_phone}")
+                app.logger.info(f"User deleted from database: {stripe_customer_phone}")
             else:
                 sub_current_period_end = object_["current_period_end"]
                 _ = users.add_user(stripe_customer_phone, sub_current_period_end)
@@ -422,7 +436,7 @@ def webhook():
             stripe_customer_phone,
         )
     else:
-        logger.warning("Unhandled event type {}".format(event_type))
+        app.logger.warning("Unhandled event type {}".format(event_type))
 
     return jsonify({"status": "success"}), 200
 
