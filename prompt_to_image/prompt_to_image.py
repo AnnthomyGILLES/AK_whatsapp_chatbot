@@ -1,9 +1,9 @@
 import asyncio
+import logging
 import os
 
 import aiohttp
 import openai
-from loguru import logger
 from openai.error import RateLimitError
 from ratelimit import sleep_and_retry, limits
 
@@ -35,7 +35,7 @@ async def generate_image(prompt):
 
                 return reply_content
             except RateLimitError:
-                logger.error(f"rate limit reached for DALL-E")
+                logging.error(f"rate limit reached for DALL-E")
 
         return await request()
 

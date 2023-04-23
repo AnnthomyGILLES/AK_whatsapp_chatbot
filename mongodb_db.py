@@ -1,8 +1,8 @@
 import datetime
+import logging
 import os
 
 import pymongo
-from loguru import logger
 from pymongo import ReturnDocument
 
 from utils import load_config
@@ -60,7 +60,7 @@ class UserCollection:
         result = self.collection.update_many(
             {"current_period_end": {"$lt": today_timestamp}}, {"$set": {"nb_tokens": 0}}
         )
-        logger.info(f"{result.modified_count} tokens resetted.")
+        logging.info(f"{result.modified_count} tokens resetted.")
 
     def update_user_history(self, phone_number, message=None):
         query = {"phone_number": phone_number}
@@ -130,7 +130,7 @@ class UserCollection:
         result = self.collection.delete_many(
             {"current_period_end": {"$lt": today_timestamp}}
         )
-        logger.info(f"Deleted {result.deleted_count} documents.")
+        logging.info(f"Deleted {result.deleted_count} documents.")
 
     def list_all_users(self):
         return list(self.collection.find({}))
