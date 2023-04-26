@@ -4,7 +4,7 @@ from openai.error import RateLimitError
 from ratelimit import sleep_and_retry, limits
 
 ONE_MINUTE = 60
-MAX_CALLS_PER_MINUTE = 30
+MAX_CALLS_PER_MINUTE = 60
 MAX_TOKENS = 400
 
 
