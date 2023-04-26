@@ -8,7 +8,7 @@ MAX_CALLS_PER_MINUTE = 60
 MAX_TOKENS = 400
 
 
-async def ask_chat_conversation(message_log):
+async def ask_chat_conversation(prompt):
     """
     Send a message to the GPT-3.5-turbo model and return the generated response.
     This function is rate limited according to the specified limits.
@@ -27,10 +27,11 @@ async def ask_chat_conversation(message_log):
             try:
                 response = await openai.ChatCompletion.acreate(
                     model="gpt-3.5-turbo",
-                    messages=message_log,
+                    messages=prompt,
                     max_tokens=MAX_TOKENS,
                     stop=None,
                     temperature=0.7,
+                    stream=False,
                 )
 
                 reply_content = response.choices[0].message.content
@@ -62,8 +63,9 @@ async def ask_prompt(prompt):
                 response = await openai.Completion.create(
                     engine="text-davinci-003",
                     prompt=prompt,
-                    max_tokens=100,
+                    max_tokens=MAX_TOKENS,
                     temperature=0.7,
+                    stream=False,
                 )
 
                 reply_content = response.choices[0].text
