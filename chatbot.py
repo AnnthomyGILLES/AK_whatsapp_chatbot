@@ -264,7 +264,7 @@ async def bot():
         return ""
     users = UserCollection(collection_name)
 
-    doc = await get_user_document(collection_name, phone_number)
+    doc = get_user_document(collection_name, phone_number)
 
     if (
         doc.get("nb_messages") >= FREE_TRIAL_LIMIT
@@ -290,7 +290,9 @@ async def bot():
     historical_messages = doc.get("history", [])
     historical_messages.append({"role": "user", "content": incoming_msg})
 
-    answer = await ask_chat_conversation(message + historical_messages)
+    current_question = message + historical_messages
+
+    answer = await ask_chat_conversation(current_question)
     nb_tokens += count_tokens(answer)
     answers = split_long_string(answer)
     for answer in answers:
@@ -305,7 +307,7 @@ async def bot():
     return ""
 
 
-async def get_user_document(collection_name, phone_number):
+def get_user_document(collection_name, phone_number):
     doc = cache.get(phone_number)
     users = UserCollection(collection_name)
 
@@ -313,11 +315,11 @@ async def get_user_document(collection_name, phone_number):
         doc = users.find_document("phone_number", phone_number)
 
         if doc is None:
-            doc_id = await users.add_user(phone_number)
+            doc_id = users.add_user(phone_number)
             send_message(WELCOME_MESSAGE, phone_number)
             send_message(WELCOME_MESSAGE_GB, phone_number)
 
-            doc = await users.collection.find_one(doc_id)
+            doc = users.collection.find_one(doc_id)
     return doc
 
 
