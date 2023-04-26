@@ -313,11 +313,11 @@ async def get_user_document(collection_name, phone_number):
         doc = users.find_document("phone_number", phone_number)
 
         if doc is None:
-            doc_id = users.add_user(phone_number)
+            doc_id = await users.add_user(phone_number)
             send_message(WELCOME_MESSAGE, phone_number)
             send_message(WELCOME_MESSAGE_GB, phone_number)
 
-            doc = users.collection.find_one(doc_id)
+            doc = await users.collection.find_one(doc_id)
     return doc
 
 
