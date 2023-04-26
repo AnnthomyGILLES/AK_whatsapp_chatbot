@@ -5,12 +5,10 @@ python-dotenv~=0.21.0
 stripe~=5.3.0
 pymongo~=3.12.0
 ratelimit~=2.2.1
-loguru~=0.6.0
 requests~=2.28.2
 tiktoken~=0.3.1
 aiohttp~=3.8.4
 pytest~=7.1.2
-selenium~=3.141.0
 boto3~=1.26.118
 mutagen~=1.46.0
 Flask-Caching
