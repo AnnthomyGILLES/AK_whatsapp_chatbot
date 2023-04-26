@@ -65,45 +65,37 @@ WHATIA_WEBSITE = os.getenv("WHATIA_WEBSITE")
 stripe.api_key = stripe_keys["secret_key"]
 
 WELCOME_MESSAGE = """🇫🇷
-					Bienvenue!🤖 \n
-					Je suis ton assistant personnel intelligent, prêt à répondre à toutes tes questions. 💬💡 \n
-					Propulsé par une intelligence artificielle, je peux t'assister de manière précise et efficace. Voici quelques exemples de ce que je peux faire pour toi : 🧐🤖 \n\n
-
-						1️⃣ Répondre à des questions générales et complexes \n
-						2️⃣ Te fournir des informations détaillées sur des événements ou des lieux \n
-						3️⃣ T'aider avec des tâches quotidiennes, comme la rédaction de mails ou la préparation de recettes \n
-						4️⃣ Analyser et résumer des articles pour toi \n
-						5️⃣ Traduire des phrases ou des textes complets dans plusieurs langues \n
-						6️⃣ Répondre à des questions d'entretien \n\n
-
-						Et bien plus encore !  🤩 \n\n
-
-
-					N'hésite pas à contacter le support si tu as des questions ou si tu as besoin d'aide. Notre équipe est disponible pour répondre à toutes tes interrogations pour t'aider à profiter pleinement de ce que je peux t'offrir🙌 \n
-
-					🌐 Site web: https://app.whatia.fr \n
-					📧 Mail: contact@whatia.fr \n
-					📷 Instagram (Abonne-toi pour ne pas rater les bons plans!💰): https://www.instagram.com/app.whatia.fr"""
+Bienvenue!🤖\n
+Je suis ton assistant personnel intelligent, prêt à répondre à toutes tes questions. 💬💡\n
+Propulsé par une intelligence artificielle, je peux t'assister de manière précise et efficace. Voici quelques exemples de ce que je peux faire pour toi : 🧐🤖\n\n
+1️⃣ Répondre à des questions générales et complexes\n
+2️⃣ Te fournir des informations détaillées sur des événements ou des lieux\n
+3️⃣ T'aider avec des tâches quotidiennes, comme la rédaction de mails ou la préparation de recettes\n
+4️⃣ Analyser et résumer des articles pour toi\n
+5️⃣ Traduire des phrases ou des textes complets dans plusieurs langues\n
+6️⃣ Répondre à des questions d'entretien\n\n
+Et bien plus encore ! 🤩\n\n
+N'hésite pas à contacter le support si tu as des questions ou si tu as besoin d'aide. Notre équipe est disponible pour répondre à toutes tes interrogations pour t'aider à profiter pleinement de ce que je peux t'offrir🙌\n
+🌐 Site web: https://app.whatia.fr\n
+📧 Mail: contact@whatia.fr\n
+📷 Instagram (Abonne-toi pour ne pas rater les bons plans!💰): https://www.instagram.com/app.whatia.fr"""
 
 WELCOME_MESSAGE_GB = """🇬🇧
-					Welcome! 🤖 \n
-					I am your intelligent personal assistant, ready to answer all your questions. 💬💡 \n
-					Powered by artificial intelligence, I can assist you accurately and efficiently. Here are some examples of what I can do for you: 🧐🤖 \n\n
+Welcome! 🤖\n
+I am your intelligent personal assistant, ready to answer all your questions. 💬💡\n
+Powered by artificial intelligence, I can assist you accurately and efficiently. Here are some examples of what I can do for you: 🧐🤖\n\n
+1️⃣ Answer general and complex questions\n
+2️⃣ Provide detailed information on events or places\n
+3️⃣ Help you with daily tasks, such as writing emails or preparing recipes\n
+4️⃣ Analyze and summarize articles for you\n
+5️⃣ Translate or complete texts in multiple languages\n
+6️⃣ Answer interview questions\n\n
+And so much more! 🤩\n\n
+Do not hesitate to contact our team if you have any questions or need help. They are available to answer all your questions 🙌\n
+🌐 Website: https://app.whatia.fr\n
+📧 Email: contact@whatia.fr\n
+📷 Instagram (Follow me so you don't miss out on great deals!💰): https://www.instagram.com/app.whatia.fr"""
 
-					1️⃣ Answer general and complex questions \n
-					2️⃣ Provide detailed information on events or places \n
-					3️⃣ Help you with daily tasks, such as writing emails or preparing recipes \n
-					4️⃣ Analyze and summarize articles for you \n
-					5️⃣ Translate or complete texts in multiple languages \n
-					6️⃣ Answer interview questions \n
-
-					And so much more! 🤩 \n\n
-
-					Do not hesitate to contact our team if you have any questions or need help. They are available to answer all your questions 🙌 \n
-
-					🌐 Website: https://app.whatia.fr \n
-					📧 Email: contact@whatia.fr \n
-					📷 Instagram (Follow me so you don't miss out on great deals!💰): https://www.instagram.com/app.whatia.fr"""
 WELCOME_MESSAGE_CTA = """🇬🇧
 					👉 If you have read the message above carefully, your free trial has started and you are now ready to discover all my features. To get started, simply chat with me by replying to this message in the language of your choice.  \n
 					Let's go! Tell me what you want! 🎬 \n\n
