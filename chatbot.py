@@ -232,9 +232,12 @@ async def bot():
     incoming_msg = str(request.values["Body"].lower().strip())
     phone_number = extract_phone_number(request.values["From"].lower())
 
+    is_audio = False
+
     media_url = request.form.get("MediaUrl0")
     if not incoming_msg:
         if media_url and request.form["MediaContentType0"] == "audio/ogg":
+            is_audio = True
             # TODO handle audio duration
             # duration = get_audio_duration(media_url)
             incoming_msg = audio_to_text(media_url)
@@ -294,7 +297,10 @@ async def bot():
 
     answer = await ask_chat_conversation(current_question)
     nb_tokens += count_tokens(answer)
-    answers = split_long_string(answer)
+    if is_audio:
+        answers = split_long_string(incoming_msg + "\n\n" + answer)
+    else:
+        answers = split_long_string(answer)
     for answer in answers:
         send_message(answer, phone_number)
     if len(historical_messages) > 4:
