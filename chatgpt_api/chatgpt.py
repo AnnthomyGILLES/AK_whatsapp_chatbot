@@ -30,7 +30,7 @@ async def ask_chat_conversation(prompt):
                     messages=prompt,
                     max_tokens=MAX_TOKENS,
                     stop=None,
-                    temperature=0.7,
+                    temperature=0.6,
                     stream=False,
                 )
 
@@ -64,7 +64,7 @@ async def ask_prompt(prompt):
                     engine="text-davinci-003",
                     prompt=prompt,
                     max_tokens=MAX_TOKENS,
-                    temperature=0.7,
+                    temperature=0.6,
                     stream=False,
                 )
 
