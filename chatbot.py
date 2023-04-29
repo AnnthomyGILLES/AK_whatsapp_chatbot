@@ -232,6 +232,10 @@ async def bot():
     incoming_msg = str(request.values["Body"].lower().strip())
     phone_number = extract_phone_number(request.values["From"].lower())
 
+    app.logger.info(
+        f"Phone number {phone_number} sent the incoming message: {incoming_msg}"
+    )
+
     is_audio = False
 
     media_url = request.form.get("MediaUrl0")
@@ -248,13 +252,7 @@ async def bot():
             )
             return ""
 
-    if not incoming_msg:
-        return ""
     nb_tokens = count_tokens(incoming_msg)
-
-    app.logger.info(
-        f"Phone number {phone_number} sent the incoming message: {incoming_msg}"
-    )
 
     if nb_tokens >= int(MAX_TOKEN_LENGTH):
         send_message("Ta question est beaucoup trop longue.", phone_number)
