@@ -229,18 +229,17 @@ async def bot():
         str: An empty string (required for Twilio to work correctly).
     """
     collection_name = "users"
-    incoming_msg = str(request.values["Body"].lower().strip())
-    phone_number = extract_phone_number(request.values["From"].lower())
+    incoming_msg = str(request.values.get("Body", "").lower().strip())
+    phone_number = extract_phone_number(request.values.get("From", "").lower())
 
     app.logger.info(
         f"Phone number {phone_number} sent the incoming message: {incoming_msg}"
     )
 
     is_audio = False
-
     media_url = request.form.get("MediaUrl0")
     if not incoming_msg:
-        if media_url and request.form["MediaContentType0"] == "audio/ogg":
+        if media_url and request.form.get("MediaContentType0") == "audio/ogg":
             is_audio = True
             # TODO handle audio duration
             # duration = get_audio_duration(media_url)
@@ -253,7 +252,6 @@ async def bot():
             return ""
 
     nb_tokens = count_tokens(incoming_msg)
-
     if nb_tokens >= int(MAX_TOKEN_LENGTH):
         send_message("Ta question est beaucoup trop longue.", phone_number)
         return ""
@@ -263,8 +261,8 @@ async def bot():
         dalle_media_url = await generate_image(incoming_msg)
         send_message(incoming_msg, phone_number, media_url=dalle_media_url)
         return ""
-    users = UserCollection(collection_name)
 
+    users = UserCollection(collection_name)
     doc = get_user_document(users, phone_number)
 
     if (
@@ -292,13 +290,14 @@ async def bot():
     historical_messages.append({"role": "user", "content": incoming_msg})
 
     current_question = message + historical_messages
-
     answer = await ask_chat_conversation(current_question)
     nb_tokens += count_tokens(answer)
+
     if is_audio:
         answers = split_long_string(incoming_msg + "\n\n" + answer)
     else:
         answers = split_long_string(answer)
+
     for answer in answers:
         send_message(answer, phone_number)
 
