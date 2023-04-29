@@ -265,7 +265,7 @@ async def bot():
         return ""
     users = UserCollection(collection_name)
 
-    doc = get_user_document(collection_name, phone_number)
+    doc = get_user_document(users, phone_number)
 
     if (
         doc.get("nb_messages") >= FREE_TRIAL_LIMIT
@@ -301,6 +301,7 @@ async def bot():
         answers = split_long_string(answer)
     for answer in answers:
         send_message(answer, phone_number)
+
     if len(historical_messages) > 4:
         del historical_messages[:2]
     historical_messages.append({"role": "assistant", "content": answer})
