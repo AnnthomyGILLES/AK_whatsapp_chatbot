@@ -73,11 +73,7 @@ class UserCollection:
     def find_document(self, field_name, field_value):
         # search for a document with a specific field value
         doc = self.collection.find_one({field_name: field_value})
-
-        # return the document if it was found
-        if doc:
-            return doc
-        return None
+        return doc
 
     def get_user_id_with_phone_number(self, phone_number):
         doc = self.find_document("phone_number", phone_number)
