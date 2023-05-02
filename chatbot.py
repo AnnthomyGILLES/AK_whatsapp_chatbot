@@ -420,7 +420,7 @@ if __name__ == "__main__":
             host="0.0.0.0",
             port=5000,
             ssl_context=(
-                "/etc/letsencrypt/live/dev.whatia.fr/fullchain.pem",
-                "/etc/letsencrypt/live/dev.whatia.fr/privkey.pem",
+                "/etc/letsencrypt/live/secure.whatia.fr/fullchain.pem",
+                "/etc/letsencrypt/live/secure.whatia.fr/privkey.pem",
             ),
         )
