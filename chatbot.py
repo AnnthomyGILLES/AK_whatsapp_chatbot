@@ -170,11 +170,9 @@ ACTIVATION_MESSAGE = """🇬🇧
 					🔑 Manage your subscription (if subscribed): app.whatia.fr/subscription \n
 					📷 Instagram (-5% for subscribers! On request): https://www.instagram.com/app.whatia.fr \n\n
 
-					Congratulations on your choice! You won't regret it, enjoy the experience! 🚀
+					Congratulations on your choice! You won't regret it, enjoy the experience! 🚀"""
 
-					\n\n
-
-					🇫🇷
+ACTIVATION_MESSAGE_FR = """🇫🇷
 					🎉Bienvenue dans le cercle privilégié des utilisateurs premium de WhatIA! Félicitations! 🎊 \n
 					Nous sommes ravis de t'accueillir parmi nous et de te proposer un accès privilegié à toutes les fonctionnalités de notre chatbot. Avec ton compte premium, tu es prêt à profiter d'une expérience de qualité supérieure. Seule ton imagination est la limite!💡📱 \n
 					Que tu souhaites améliorer ton expérience utilisateur ou découvrir de nouvelles fonctionnalités, nous sommes là pour t'accompagner tout au long de ton utilisation. N'hésite donc pas à nous contacter si tu as des questions ou si tu as besoin d'aide. Notre équipe est à ta disposition pour t'offrir une expérience inoubliable sur WhatIA. 🤝👨‍💼 \n\n
@@ -311,9 +309,8 @@ async def bot():
     return ""
 
 
-def get_user_document(collection_name, phone_number):
+def get_user_document(users, phone_number):
     doc = cache.get(phone_number)
-    users = UserCollection(collection_name)
 
     if doc is None:
         doc = users.find_document("phone_number", phone_number)
@@ -368,6 +365,10 @@ def webhook():
             ACTIVATION_MESSAGE,
             stripe_customer_phone,
         )
+        send_message(
+            ACTIVATION_MESSAGE_FR,
+            stripe_customer_phone,
+        )
     elif event_type == "customer.subscription.updated":
         if object_.status in ["canceled", "unpaid"]:
             if not object_.cancel_at_period_end:
@@ -384,10 +385,12 @@ def webhook():
                 ACTIVATION_MESSAGE,
                 stripe_customer_phone,
             )
+            send_message(ACTIVATION_MESSAGE_FR, stripe_customer_phone)
         if object_["status"] == "active":
             sub_current_period_end = object_["current_period_end"]
             _ = users.add_user(stripe_customer_phone, sub_current_period_end)
             send_message(ACTIVATION_MESSAGE, stripe_customer_phone)
+            send_message(ACTIVATION_MESSAGE_FR, stripe_customer_phone)
     elif event_type == "checkout.session.completed":
         sub_current_period_end = datetime.datetime.utcnow()
         # Pass 7 jours
@@ -406,6 +409,7 @@ def webhook():
             ACTIVATION_MESSAGE,
             stripe_customer_phone,
         )
+        send_message(ACTIVATION_MESSAGE_FR, stripe_customer_phone)
     else:
         app.logger.warning("Unhandled event type {}".format(event_type))
 
