@@ -44,10 +44,10 @@ dictConfig(
     }
 )
 
-logger = logging.getLogger("my_fastapi_app")
-
 
 app = FastAPI()
+
+logger = logging.getLogger("my_fastapi_app")
 
 app.add_middleware(
     CORSMiddleware,
@@ -442,4 +442,5 @@ if __name__ == "__main__":
             port=5000,
             ssl_certfile="/etc/letsencrypt/live/secure.whatia.fr/fullchain.pem",
             ssl_keyfile="/etc/letsencrypt/live/secure.whatia.fr/privkey.pem",
+            debug=True,
         )
