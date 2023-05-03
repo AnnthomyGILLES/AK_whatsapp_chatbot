@@ -1,6 +1,5 @@
 twilio~=7.16.5
 openai~=0.27.2
-flask~=2.2.3
 python-dotenv~=0.21.0
 stripe~=5.3.0
 pymongo~=3.12.0
@@ -11,6 +10,7 @@ aiohttp~=3.8.4
 pytest~=7.1.2
 boto3~=1.26.118
 mutagen~=1.46.0
-Flask-Caching
+uvicorn~=0.22.0
+fastapi~=0.95.1
 asgiref
 pyOpenSSL

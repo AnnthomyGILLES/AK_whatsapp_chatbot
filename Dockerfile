@@ -14,8 +14,8 @@ RUN pip install --trusted-host pypi.python.org -r requirements.txt
 EXPOSE 5000
 
 # Define environment variable
-ENV FLASK_APP=chatbot.py
 ENV PYTHONUNBUFFERED=1
 ENV ENV_WHATIA=PROD
-# Run app.py when the container launches
-CMD ["python", "chatbot.py"]
+
+# Run the app using uvicorn server with 4 workers
+CMD ["uvicorn", "chatbot:app", "--host", "0.0.0.0", "--port", "5000", "--workers", "4"]

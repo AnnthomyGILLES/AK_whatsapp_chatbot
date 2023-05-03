@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  flask:
+  fastapi:
     build: .
     container_name: chatbot
     restart: unless-stopped
@@ -19,6 +19,7 @@ services:
       - backend
     ports:
       - "5000:5000"
+    command: uvicorn chatbot:app --host 0.0.0.0 --port 5000 --workers 4
 
   mongodb:
     image: mongo:latest
@@ -45,7 +46,7 @@ services:
       - nginxdata:/var/log/nginx
       - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
-      - flask
+      - fastapi
     networks:
       - frontend
 
