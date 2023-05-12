@@ -44,10 +44,9 @@ dictConfig(
     }
 )
 
-
 app = FastAPI()
 
-logger = logging.getLogger("my_fastapi_app")
+logger = logging.getLogger(__name__)
 
 app.add_middleware(
     CORSMiddleware,
@@ -231,6 +230,11 @@ EXAMPLE_MESSAGE = """
 🎥 Obtenir des suggestions de films ou de séries : "Quel est le meilleur film à regarder sur Netflix en ce moment ?"
 🚗 Demander des informations sur les voitures : "Quelle est la meilleure voiture pour les longs trajets ?"
 """
+
+
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
 
 
 @app.post("/bot")
@@ -437,10 +441,9 @@ if __name__ == "__main__":
         uvicorn.run(app, host="0.0.0.0", port=5000)
     elif env_name == "PROD":
         uvicorn.run(
-            app,
+            "chatbot:app",
             host="0.0.0.0",
-            port=5000,
+            port=443,
             ssl_certfile="/etc/letsencrypt/live/secure.whatia.fr/fullchain.pem",
             ssl_keyfile="/etc/letsencrypt/live/secure.whatia.fr/privkey.pem",
-            debug=True,
         )

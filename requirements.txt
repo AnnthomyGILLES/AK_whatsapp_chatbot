@@ -10,7 +10,8 @@ aiohttp~=3.8.4
 pytest~=7.1.2
 boto3~=1.26.118
 mutagen~=1.46.0
-uvicorn~=0.22.0
-fastapi~=0.95.1
+uvicorn[standard]~=0.22.0
+fastapi[all]~=0.95.1
 asgiref
 pyOpenSSL
+gunicorn==20.1.0
