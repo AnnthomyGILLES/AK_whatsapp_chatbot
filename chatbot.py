@@ -1,12 +1,15 @@
 import datetime
+import logging
 import os
 import re
 from logging.config import dictConfig
 
 import openai
 import stripe
-from flask import Flask, request, jsonify
-from flask_caching import Cache
+import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from audio.transcription import audio_to_text
 from chatgpt_api.chatgpt import ask_chat_conversation
@@ -41,12 +44,24 @@ dictConfig(
     }
 )
 
-app = Flask(__name__)
+app = FastAPI()
 
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "top-secret!")
-app.config["PERMANENT_SESSION_LIFETIME"] = datetime.timedelta(minutes=10)
+logger = logging.getLogger(__name__)
 
-cache = Cache(app, config={"CACHE_TYPE": "simple", "CACHE_DEFAULT_TIMEOUT": 120})
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.config = {
+    "SECRET_KEY": os.getenv("SECRET_KEY", "top-secret!"),
+    "PERMANENT_SESSION_LIFETIME": datetime.timedelta(minutes=10),
+}
+
+# cache = Cache(config={"CACHE_TYPE": "simple", "CACHE_DEFAULT_TIMEOUT": 120})
 
 # OpenAI Chat GPT
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -174,7 +189,7 @@ ACTIVATION_MESSAGE = """🇬🇧
 
 ACTIVATION_MESSAGE_FR = """🇫🇷
 					🎉Bienvenue dans le cercle privilégié des utilisateurs premium de WhatIA! Félicitations! 🎊 \n
-					Nous sommes ravis de t'accueillir parmi nous et de te proposer un accès privilegié à toutes les fonctionnalités de notre chatbot. Avec ton compte premium, tu es prêt à profiter d'une expérience de qualité supérieure. Seule ton imagination est la limite!💡📱 \n
+					Nous sommes ravis de t'accueillir parmi nous et de te proposer un accès privilegié à toutes les fonctionnalités de notre chatbot. Avec ton compte premium, tu es prêt.e à profiter d'une expérience de qualité supérieure. Seule ton imagination est la limite!💡📱 \n
 					Que tu souhaites améliorer ton expérience utilisateur ou découvrir de nouvelles fonctionnalités, nous sommes là pour t'accompagner tout au long de ton utilisation. N'hésite donc pas à nous contacter si tu as des questions ou si tu as besoin d'aide. Notre équipe est à ta disposition pour t'offrir une expérience inoubliable sur WhatIA. 🤝👨‍💼 \n\n
 
 					📧 Mail: contact@whatia.fr \n
@@ -217,8 +232,13 @@ EXAMPLE_MESSAGE = """
 """
 
 
-@app.route("/bot", methods=["POST"])
-async def bot():
+@app.get("/")
+async def root():
+    return {"message": "Hello World"}
+
+
+@app.post("/bot")
+async def bot(request: Request):
     """
     Handle incoming messages from users, process them, and send responses.
     This function is designed to be used as an endpoint for a webhook.
@@ -227,17 +247,18 @@ async def bot():
         str: An empty string (required for Twilio to work correctly).
     """
     collection_name = "users"
-    incoming_msg = str(request.values.get("Body", "").lower().strip())
-    phone_number = extract_phone_number(request.values.get("From", "").lower())
+    form_data = await request.form()
+    incoming_msg = str(form_data.get("Body", "").lower().strip())
+    phone_number = extract_phone_number(form_data.get("From", "").lower())
 
-    app.logger.info(
+    logger.info(
         f"Phone number {phone_number} sent the incoming message: {incoming_msg}"
     )
 
     is_audio = False
-    media_url = request.form.get("MediaUrl0")
+    media_url = form_data.get("MediaUrl0")
     if not incoming_msg:
-        if media_url and request.form.get("MediaContentType0") == "audio/ogg":
+        if media_url and form_data.get("MediaContentType0") == "audio/ogg":
             is_audio = True
             # TODO handle audio duration
             # duration = get_audio_duration(media_url)
@@ -305,30 +326,29 @@ async def bot():
     historical_messages.append({"role": "assistant", "content": answer})
     users.increment_nb_tokens_messages(doc, nb_tokens)
     doc = users.update_user_history(phone_number, historical_messages)
-    cache.set(phone_number, doc)
+    # cache.set(phone_number, doc)
 
     return ""
 
 
 def get_user_document(users, phone_number):
-    doc = cache.get(phone_number)
+    # doc = cache.get(phone_number)
+
+    # if doc is None:
+    doc = users.find_document("phone_number", phone_number)
 
     if doc is None:
-        doc = users.find_document("phone_number", phone_number)
+        doc_id = users.add_user(phone_number)
+        send_message(WELCOME_MESSAGE, phone_number)
+        send_message(WELCOME_MESSAGE_GB, phone_number)
 
-        if doc is None:
-            doc_id = users.add_user(phone_number)
-            send_message(WELCOME_MESSAGE, phone_number)
-            send_message(WELCOME_MESSAGE_GB, phone_number)
-
-            doc = users.collection.find_one(doc_id)
+        doc = users.collection.find_one(doc_id)
     return doc
 
 
-# TODO Anonymize phone number
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    payload = request.data.decode("utf-8")
+@app.post("/webhook")
+async def webhook(request: Request):
+    payload = await request.body()
     sig_header = request.headers.get("Stripe-Signature")
 
     try:
@@ -336,11 +356,11 @@ def webhook():
             payload, sig_header, stripe_keys["endpoint_secret"]
         )
     except ValueError:
-        app.logger.error("Invalid payload")
-        return jsonify({"error": "Invalid payload"}), 400
+        logger.error("Invalid payload")
+        return JSONResponse(content={"error": "Invalid payload"}, status_code=400)
     except stripe.error.SignatureVerificationError:
-        app.logger.error("Invalid signature")
-        return jsonify({"error": "Invalid signature"}), 400
+        logger.error("Invalid signature")
+        return JSONResponse(content={"error": "Invalid signature"}, status_code=400)
 
     event_type = event["type"]
     object_ = event["data"]["object"]
@@ -358,7 +378,7 @@ def webhook():
         "customer.subscription.paused",
     ]:
         users.delete_document({"phone_number": stripe_customer_phone})
-        app.logger.info(f"User deleted from database: {stripe_customer_phone}")
+        logger.info(f"User deleted from database: {stripe_customer_phone}")
     elif event_type == "customer.subscription.created":
         sub_current_period_end = object_["current_period_end"]
         _ = users.add_user(stripe_customer_phone, sub_current_period_end)
@@ -374,7 +394,7 @@ def webhook():
         if object_.status in ["canceled", "unpaid"]:
             if not object_.cancel_at_period_end:
                 users.delete_document({"phone_number": stripe_customer_phone})
-                app.logger.info(f"User deleted from database: {stripe_customer_phone}")
+                logger.info(f"User deleted from database: {stripe_customer_phone}")
             else:
                 sub_current_period_end = object_["current_period_end"]
                 _ = users.add_user(stripe_customer_phone, sub_current_period_end)
@@ -412,20 +432,19 @@ def webhook():
         )
         send_message(ACTIVATION_MESSAGE_FR, stripe_customer_phone)
     else:
-        app.logger.warning("Unhandled event type {}".format(event_type))
+        logger.warning("Unhandled event type {}".format(event_type))
 
-    return jsonify({"status": "success"}), 200
+    return JSONResponse(content={"status": "success"}, status_code=200)
 
 
 if __name__ == "__main__":
     if env_name == "DEVELOPMENT":
-        app.run(host="0.0.0.0", port=5000)
+        uvicorn.run(app, host="0.0.0.0", port=5000)
     elif env_name == "PROD":
-        app.run(
+        uvicorn.run(
+            "chatbot:app",
             host="0.0.0.0",
-            port=5000,
-            ssl_context=(
-                "/etc/letsencrypt/live/secure.whatia.fr/fullchain.pem",
-                "/etc/letsencrypt/live/secure.whatia.fr/privkey.pem",
-            ),
+            port=8000,
+            ssl_certfile="/etc/letsencrypt/live/pay.whatia.fr/fullchain.pem",
+            ssl_keyfile="/etc/letsencrypt/live/pay.whatia.fr/privkey.pem",
         )

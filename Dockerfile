@@ -11,11 +11,13 @@ COPY . /app
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
 # Make port 5000 available to the world outside this container
-EXPOSE 5000
+EXPOSE 8000
 
 # Define environment variable
-ENV FLASK_APP=chatbot.py
 ENV PYTHONUNBUFFERED=1
 ENV ENV_WHATIA=PROD
+
 # Run app.py when the container launches
-CMD ["python", "chatbot.py"]
+#CMD ["python", "chatbot.py"]
+#CMD ["uvicorn", "chatbot:app", "--host", "0.0.0.0", "--workers", "4"]
+CMD ["uvicorn", "chatbot:app", "--host", "0.0.0.0", "--port", "8000", "--ssl-keyfile", "/etc/letsencrypt/live/pay.whatia.fr/privkey.pem", "--ssl-certfile", "/etc/letsencrypt/live/pay.whatia.fr/fullchain.pem"]

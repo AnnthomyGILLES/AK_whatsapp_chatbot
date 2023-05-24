@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  flask:
+  fastapi:
     build: .
     container_name: chatbot
     restart: unless-stopped
@@ -18,7 +18,7 @@ services:
       - frontend
       - backend
     ports:
-      - "5000:5000"
+      - "8000:8000"
 
   mongodb:
     image: mongo:latest
@@ -45,7 +45,7 @@ services:
       - nginxdata:/var/log/nginx
       - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
-      - flask
+      - fastapi
     networks:
       - frontend
 
