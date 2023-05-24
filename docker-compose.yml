@@ -11,15 +11,14 @@ services:
       MONGODB_HOST: mongodb
     volumes:
       - appdata:/app
-#      - /etc/letsencrypt:/etc/letsencrypt
+      - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
       - mongodb
     networks:
+      - frontend
       - backend
-      - traefik-public
     ports:
-      - "5000:5000"
-#      - "443:443"
+      - "8000:8000"
 
   mongodb:
     image: mongo:latest
@@ -35,56 +34,26 @@ services:
     networks:
       - backend
 
-#  webserver:
-#    image: nginx:latest
-#    container_name: webserver
-#    restart: unless-stopped
-#    ports:
-#      - "80:80"
-#      - "8443:443"
-#    volumes:
-#      - nginxdata:/var/log/nginx
-#      - /etc/letsencrypt:/etc/letsencrypt
-#    depends_on:
-#      - fastapi
-#    networks:
-#      - frontend
-
-  backend:
-    build: ./
-    restart: always
-    labels:
-      # Enable Traefik for this specific "backend" service
-      - traefik.enable=true
-      # Define the port inside of the Docker service to use
-      - traefik.http.services.app.loadbalancer.server.port=80
-      # Make Traefik use this domain in HTTP
-      - traefik.http.routers.backend.entrypoints=http
-      - traefik.http.routers.backend.rule=Host(`pay.whatia.fr`)
-      # Use the traefik-public network (declared below)
-      - traefik.docker.network=traefik-public
-      # Make Traefik use this domain in HTTPS
-      - traefik.http.routers.backend.entrypoints=https
-      - traefik.http.routers.backend.rule=Host(`pay.whatia.fr`)
-      - traefik.http.routers.backend.tls=true
-      # Use the "le" (Let's Encrypt) resolver
-      - traefik.http.routers.backend.tls.certresolver=le
-      # https-redirect middleware to redirect HTTP to HTTPS
-      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
-      - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
-      # Middleware to redirect HTTP to HTTPS
-      - traefik.http.routers.backend.middlewares=https-redirect
-      - traefik.http.routers.backend.middlewares=admin-auth
+  webserver:
+    image: nginx:latest
+    container_name: webserver
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - nginxdata:/var/log/nginx
+      - /etc/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - fastapi
     networks:
-      # Use the public network created to be shared between Traefik and
-      # any other service that needs to be publicly available with HTTPS
-      - traefik-public
+      - frontend
 
 networks:
+  frontend:
+    driver: bridge
   backend:
     driver: bridge
-  traefik-public:
-    external: true
 
 volumes:
   mongodbdata:
