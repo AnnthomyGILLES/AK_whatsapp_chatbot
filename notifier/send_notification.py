@@ -2,6 +2,7 @@ import os
 
 from twilio.rest import Client
 
+from chatbot import logger
 from utils import load_config
 
 load_config()
@@ -28,7 +29,7 @@ def send_message(body_mess, phone_number, media_url=None):
         to=f"whatsapp:{phone_number}",
         media_url=media_url,
     )
-    print(response.sid)
+    logger.info(response.sid)
 
 
 if __name__ == "__main__":

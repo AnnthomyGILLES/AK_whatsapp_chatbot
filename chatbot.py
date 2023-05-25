@@ -445,6 +445,6 @@ if __name__ == "__main__":
             "chatbot:app",
             host="0.0.0.0",
             port=8000,
-            ssl_certfile="/etc/letsencrypt/live/pay.whatia.fr/fullchain.pem",
-            ssl_keyfile="/etc/letsencrypt/live/pay.whatia.fr/privkey.pem",
+            ssl_certfile="/etc/letsencrypt/live/secure.whatia.fr/fullchain.pem",
+            ssl_keyfile="/etc/letsencrypt/live/secure.whatia.fr/privkey.pem",
         )
