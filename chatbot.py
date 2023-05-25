@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import re
+import time
 from logging.config import dictConfig
 
 import openai
@@ -254,6 +255,7 @@ async def bot(request: Request):
     logger.info(
         f"Phone number {phone_number} sent the incoming message: {incoming_msg}"
     )
+    start_time = time.time()
 
     is_audio = False
     media_url = form_data.get("MediaUrl0")
@@ -311,6 +313,11 @@ async def bot(request: Request):
 
     current_question = message + historical_messages
     answer = await ask_chat_conversation(current_question)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    logger.info(
+        f"Elapsed time to get OpenAI answer for {phone_number}: {elapsed_time} seconds"
+    )
     nb_tokens += count_tokens(answer)
 
     if is_audio:
@@ -320,6 +327,11 @@ async def bot(request: Request):
 
     for answer in answers:
         send_message(answer, phone_number)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    logger.info(
+        f"Elapsed time for message sending {phone_number}: {elapsed_time} seconds"
+    )
 
     if len(historical_messages) > 4:
         del historical_messages[:2]

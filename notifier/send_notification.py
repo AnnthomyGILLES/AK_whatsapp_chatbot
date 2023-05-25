@@ -1,11 +1,15 @@
+import logging
 import os
 
 from twilio.rest import Client
 
-from chatbot import logger
 from utils import load_config
 
 load_config()
+
+logging.basicConfig(level=logging.DEBUG)  # or any level you want
+logger = logging.getLogger(__name__)
+
 # Twilio
 account_sid = os.getenv("TWILIO_ACCOUNT_SID")
 auth_token = os.getenv("TWILIO_AUTH_TOKEN")
