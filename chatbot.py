@@ -282,6 +282,11 @@ async def bot(request: Request):
         dalle_media_url = await generate_image(incoming_msg)
         send_message(incoming_msg, phone_number, media_url=dalle_media_url)
         return ""
+    elif (
+        "essai gratuit (envoies moi un message) | free trial (just send a message)"
+        in incoming_msg
+    ):
+        return ""
 
     users = UserCollection(collection_name)
     doc = get_user_document(users, phone_number)
@@ -312,7 +317,16 @@ async def bot(request: Request):
     historical_messages.append({"role": "user", "content": incoming_msg})
 
     current_question = message + historical_messages
-    answer = await ask_chat_conversation(current_question)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    logger.info(
+        f"Elapsed time to get question prepared {phone_number}: {elapsed_time} seconds"
+    )
+    if doc.get("current_period_end") is None:
+        answer = await ask_chat_conversation(current_question)
+    else:
+        answer = await ask_chat_conversation(current_question, max_tokens=400)
+
     end_time = time.time()
     elapsed_time = end_time - start_time
     logger.info(

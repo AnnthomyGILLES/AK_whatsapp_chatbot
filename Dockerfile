@@ -20,4 +20,4 @@ ENV ENV_WHATIA=PROD
 # Run app.py when the container launches
 #CMD ["python", "chatbot.py"]
 #CMD ["uvicorn", "chatbot:app", "--host", "0.0.0.0", "--workers", "4"]
-CMD ["uvicorn", "chatbot:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--ssl-keyfile", "/etc/letsencrypt/live/secure.whatia.fr/privkey.pem", "--ssl-certfile", "/etc/letsencrypt/live/secure.whatia.fr/fullchain.pem"]
+CMD ["uvicorn", "chatbot:app", "--host", "0.0.0.0", "--port", "8000", "--ssl-keyfile", "/etc/letsencrypt/live/secure.whatia.fr/privkey.pem", "--ssl-certfile", "/etc/letsencrypt/live/secure.whatia.fr/fullchain.pem"]
