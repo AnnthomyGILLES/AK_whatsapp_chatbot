@@ -63,7 +63,6 @@ app.config = {
     "PERMANENT_SESSION_LIFETIME": datetime.timedelta(minutes=10),
 }
 
-# cache = Cache(config={"CACHE_TYPE": "simple", "CACHE_DEFAULT_TIMEOUT": 120})
 
 # OpenAI Chat GPT
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -294,12 +293,7 @@ async def bot(request: Request):
     if incoming_msg.startswith(("!image", "! image")):
         incoming_msg = re.sub(r"^! ?image", "", incoming_msg)
         dalle_media_url = await generate_image(incoming_msg)
-        # response.message(incoming_msg, media_url=dalle_media_url)
-
-        # Add a text message
         msg = response.message(incoming_msg)
-
-        # Add a picture message
         msg.media(dalle_media_url)
 
         return Response(
@@ -395,9 +389,6 @@ async def bot(request: Request):
 
 
 def get_user_document(users, phone_number):
-    # doc = cache.get(phone_number)
-
-    # if doc is None:
     doc = users.find_document("phone_number", phone_number)
 
     if doc is None:
