@@ -271,22 +271,43 @@ async def bot(request: Request):
             # duration = get_audio_duration(media_url)
             incoming_msg = audio_to_text(media_url)
         else:
-            send_message(
-                "Il faut écrire un message textuel ou enregistrer un audio pour discuter avec moi.",
-                phone_number,
+            response.message(
+                "Il faut écrire un message textuel ou enregistrer un audio pour discuter avec moi."
             )
-            return ""
+            return Response(
+                content=str(response),
+                status_code=status_code,
+                headers=headers,
+                media_type=media_type,
+            )
 
     nb_tokens = count_tokens(incoming_msg)
     if nb_tokens >= int(MAX_TOKEN_LENGTH):
-        send_message("Ta question est beaucoup trop longue.", phone_number)
-        return ""
+        response.message("Ta question est beaucoup trop longue.")
+        return Response(
+            content=str(response),
+            status_code=status_code,
+            headers=headers,
+            media_type=media_type,
+        )
 
     if incoming_msg.startswith(("!image", "! image")):
         incoming_msg = re.sub(r"^! ?image", "", incoming_msg)
         dalle_media_url = await generate_image(incoming_msg)
-        send_message(incoming_msg, phone_number, media_url=dalle_media_url)
-        return ""
+        # response.message(incoming_msg, media_url=dalle_media_url)
+
+        # Add a text message
+        msg = response.message(incoming_msg)
+
+        # Add a picture message
+        msg.media(dalle_media_url)
+
+        return Response(
+            content=str(response),
+            status_code=status_code,
+            headers=headers,
+            media_type=media_type,
+        )
     elif (
         "essai gratuit (envoies moi un message) | free trial (just send a message)"
         in incoming_msg
@@ -314,9 +335,14 @@ async def bot(request: Request):
     ]
 
     if doc["is_blocked"]:
-        send_message(TRIAL_END_MESSAGE_GB, phone_number)
-        send_message(TRIAL_END_MESSAGE_FR, phone_number)
-        return ""
+        response.message(TRIAL_END_MESSAGE_GB)
+        response.message(TRIAL_END_MESSAGE_FR)
+        return Response(
+            content=str(response),
+            status_code=status_code,
+            headers=headers,
+            media_type=media_type,
+        )
 
     historical_messages = doc.get("history", [])
     historical_messages.append({"role": "user", "content": incoming_msg})
@@ -346,6 +372,7 @@ async def bot(request: Request):
 
     for answer in answers:
         response.message(answer)
+
     end_time = time.time()
     elapsed_time = end_time - start_time
     logger.info(
@@ -354,6 +381,7 @@ async def bot(request: Request):
 
     if len(historical_messages) > 4:
         del historical_messages[:2]
+
     historical_messages.append({"role": "assistant", "content": answer})
     users.increment_nb_tokens_messages(doc, nb_tokens)
     users.update_user_history(phone_number, historical_messages)
