@@ -27,7 +27,7 @@ def send_message(body_mess, phone_number, media_url=None):
         phone_number (str): The recipient's phone number.
     """
     response = client.messages.create(
-        messaging_service_sid="MG19e644894066c03828cf0217bf3764f2",
+        messaging_service_sid="MG160b0c8183ce26835f658d9f3b2dd0a7",
         from_=f"whatsapp:{twilio_phone_numer}",
         body=body_mess,
         to=f"whatsapp:{phone_number}",

@@ -8,9 +8,10 @@ from logging.config import dictConfig
 import openai
 import stripe
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from twilio.twiml.messaging_response import MessagingResponse
 
 from audio.transcription import audio_to_text
 from chatgpt_api.chatgpt import ask_chat_conversation
@@ -252,6 +253,10 @@ async def bot(request: Request):
     incoming_msg = str(form_data.get("Body", "").lower().strip())
     phone_number = extract_phone_number(form_data.get("From", "").lower())
 
+    response = MessagingResponse()
+    status_code = status.HTTP_202_ACCEPTED
+    headers = {"Content-Type": "text/xml"}
+    media_type = "text/xml"
     logger.info(
         f"Phone number {phone_number} sent the incoming message: {incoming_msg}"
     )

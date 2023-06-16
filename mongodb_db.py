@@ -65,10 +65,9 @@ class UserCollection:
     def update_user_history(self, phone_number, message=None):
         query = {"phone_number": phone_number}
         update = {"$set": {"history": message}}
-        document = self.collection.find_one_and_update(
+        self.collection.find_one_and_update(
             query, update, upsert=True, return_document=ReturnDocument.AFTER
         )
-        return document
 
     def find_document(self, field_name, field_value):
         # search for a document with a specific field value
