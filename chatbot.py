@@ -345,7 +345,7 @@ async def bot(request: Request):
         answers = split_long_string(answer)
 
     for answer in answers:
-        send_message(answer, phone_number)
+        response.message(answer)
     end_time = time.time()
     elapsed_time = end_time - start_time
     logger.info(
@@ -356,10 +356,14 @@ async def bot(request: Request):
         del historical_messages[:2]
     historical_messages.append({"role": "assistant", "content": answer})
     users.increment_nb_tokens_messages(doc, nb_tokens)
-    doc = users.update_user_history(phone_number, historical_messages)
-    # cache.set(phone_number, doc)
+    users.update_user_history(phone_number, historical_messages)
 
-    return ""
+    return Response(
+        content=str(response),
+        status_code=status_code,
+        headers=headers,
+        media_type=media_type,
+    )
 
 
 def get_user_document(users, phone_number):
