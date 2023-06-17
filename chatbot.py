@@ -365,7 +365,8 @@ async def bot(request: Request):
         answers = split_long_string(answer)
 
     for answer in answers:
-        response.message(answer)
+        send_message(answer, phone_number)
+        # response.message(answer)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
