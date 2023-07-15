@@ -1,4 +1,3 @@
-import aiohttp
 import openai
 from openai.error import RateLimitError
 from ratelimit import sleep_and_retry, limits
