@@ -350,7 +350,7 @@ async def bot(request: Request):
     if doc.get("current_period_end") is None:
         answer = await ask_chat_conversation(current_question)
     else:
-        answer = await ask_chat_conversation(current_question, max_tokens=400)
+        answer = await ask_chat_conversation(current_question, max_tokens=500)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
