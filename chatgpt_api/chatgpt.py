@@ -12,7 +12,7 @@ MAX_CALLS_PER_MINUTE = 60
 async def ask_chat_conversation(prompt, max_tokens=350):
     try:
         response = await openai.ChatCompletion.acreate(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=prompt,
             max_tokens=max_tokens,
             stop=None,
