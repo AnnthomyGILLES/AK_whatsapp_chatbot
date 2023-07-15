@@ -366,6 +366,7 @@ async def bot(request: Request):
 
     for answer in answers:
         send_message(answer, phone_number)
+        time.sleep(1)
         # response.message(answer)
 
     end_time = time.time()
