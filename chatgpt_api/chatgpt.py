@@ -9,7 +9,7 @@ MAX_CALLS_PER_MINUTE = 60
 
 @sleep_and_retry
 @limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
-async def ask_chat_conversation(prompt, max_tokens=300):
+async def ask_chat_conversation(prompt, max_tokens=350):
     try:
         response = await openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo",
