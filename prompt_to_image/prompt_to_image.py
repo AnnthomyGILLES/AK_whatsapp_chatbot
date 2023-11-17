@@ -1,10 +1,9 @@
 import asyncio
 import logging
-import os
 
 import aiohttp
 import openai
-from openai.error import RateLimitError
+from openai import OpenAI
 from ratelimit import sleep_and_retry, limits
 
 from utils import load_config
@@ -15,7 +14,8 @@ MAX_TOKENS = 400
 
 load_config()
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Initialize the OpenAI client
+client = OpenAI()
 
 
 async def generate_image(prompt):
@@ -25,19 +25,25 @@ async def generate_image(prompt):
         @limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
         async def request():
             try:
-                response = openai.Image.create(
+                response = client.images.generate(
+                    model="dall-e-3",
                     prompt=prompt,
+                    size="1024x1024",
+                    quality="standard",
                     n=1,
-                    size="256x256",
                 )
 
-                reply_content = response["data"][0]["url"]
+                image_url = response.data[0].url
 
-                return reply_content
-            except RateLimitError:
-                logging.error(f"rate limit reached for DALL-E")
+                return image_url
+            except openai.RateLimitError as e:
+                logging.error("Rate limit reached for DALL-E")
 
         return await request()
+
+
+# Example usage
+# asyncio.run(generate_image("a white siamese cat"))
 
 
 async def main():
