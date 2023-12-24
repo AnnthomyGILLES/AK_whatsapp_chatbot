@@ -5,7 +5,6 @@ import re
 import time
 from logging.config import dictConfig
 
-import openai
 import stripe
 import uvicorn
 from fastapi import FastAPI, Request, Response, status
@@ -65,8 +64,6 @@ app.config = {
 
 
 # OpenAI Chat GPT
-openai.api_key = os.getenv("OPENAI_API_KEY")
-completion = openai.Completion()
 MAX_TOKEN_LENGTH = os.getenv("MAX_TOKEN_LENGTH", 200)
 
 # Stripe
