@@ -3,7 +3,7 @@ import logging
 
 import aiohttp
 import openai
-from openai import OpenAI
+from openai import AsyncOpenAI
 from ratelimit import sleep_and_retry, limits
 
 from utils import load_config
@@ -15,7 +15,7 @@ MAX_TOKENS = 400
 load_config()
 
 # Initialize the OpenAI client
-client = OpenAI()
+client = AsyncOpenAI()
 
 
 async def generate_image(prompt):
@@ -25,14 +25,13 @@ async def generate_image(prompt):
         @limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
         async def request():
             try:
-                response = client.images.generate(
-                    model="dall-e-3",
+                print(prompt)
+                response = await client.images.generate(
                     prompt=prompt,
-                    size="1024x1024",
+                    size="256x256",
                     quality="standard",
                     n=1,
                 )
-
                 image_url = response.data[0].url
 
                 return image_url

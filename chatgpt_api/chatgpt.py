@@ -1,5 +1,7 @@
 import openai
-from openai.error import RateLimitError
+from openai import AsyncOpenAI
+
+client = AsyncOpenAI()
 from ratelimit import sleep_and_retry, limits
 
 ONE_MINUTE = 60
@@ -10,7 +12,7 @@ MAX_CALLS_PER_MINUTE = 60
 @limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
 async def ask_chat_conversation(prompt, max_tokens=350):
     try:
-        response = await openai.ChatCompletion.acreate(
+        response = await client.chat.completions.create(
             model="gpt-4",
             messages=prompt,
             max_tokens=max_tokens,
@@ -20,5 +22,5 @@ async def ask_chat_conversation(prompt, max_tokens=350):
         )
         reply_content = response.choices[0].message.content
         return reply_content
-    except RateLimitError:
+    except openai.RateLimitError as e:
         print("[Log] Rate limit reached")
