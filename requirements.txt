@@ -11,7 +11,7 @@ pytest~=7.1.2
 boto3~=1.26.118
 mutagen~=1.46.0
 uvicorn[standard]~=0.22.0
-fastapi[all]~=0.95.1
+fastapi>=0.109.1
 asgiref
 pyOpenSSL
 gunicorn==20.1.0
