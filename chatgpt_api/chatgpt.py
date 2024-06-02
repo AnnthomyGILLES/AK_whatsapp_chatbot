@@ -10,7 +10,7 @@ MAX_CALLS_PER_MINUTE = 60
 
 @sleep_and_retry
 @limits(calls=MAX_CALLS_PER_MINUTE, period=ONE_MINUTE)
-async def ask_chat_conversation(prompt, max_tokens=350):
+async def ask_chat_conversation(prompt, max_tokens=500):
     try:
         response = await client.chat.completions.create(
             model="gpt-4",
